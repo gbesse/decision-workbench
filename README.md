@@ -118,3 +118,5 @@ Open Decision Review from the sidebar. Create a review set from a finished Sheet
 Select cases, a development/holdout split and minimum reviewer count before exporting. Exported states cannot enter both splits in this database. This guards exact duplicates, not semantically equivalent examples. Dataset exports include the policy, provenance and original judgments; keep them private. Imported records are structurally checked against their policy/state, not cryptographically authenticated against the original provider.
 
 The `@gbesse/decision-workbench/apps` export supplies the same loopback-only token authentication and SQLite persistence for Decision Migrate and Catalog Repair. It is not an internet-facing server.
+
+See [the six-product launch map](docs/launch-ecosystem.md) for related apps, native Decision Blocks, conformance evidence and the private DecisionHub deployment.

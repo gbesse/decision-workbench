@@ -1,0 +1,16 @@
+# Six launch products
+
+Purpose: Map the six 2026-09-21 launches to their public repositories and tested boundaries.
+
+| Launch               | Location                                                                                                                           | Delivered scope                                                                                                                                   |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Decision Migrate     | [Repository](https://github.com/gbesse/decision-migrate)                                                                           | Local Dify DSL 0.3.1 classifier inspection, exact model patch, independent Jev/baseline comparison. Dify runtime not executed.                    |
+| Catalog Repair       | [Repository](https://github.com/gbesse/catalog-repair)                                                                             | WooCommerce CSV anomalies, reviewed category export, MatchGraph/ExceptionOS proposals and Jev pair advice. No store writes.                       |
+| Decision Blocks      | [Node-RED addon](https://github.com/gbesse/node-red-contrib-jev-decisions)                                                         | Native two-branch decision flow and exact-policy/state traces importable in Decision Review. Node-RED 5.0.7 tested.                               |
+| Decision Conformance | [Repository](https://github.com/gbesse/decision-conformance)                                                                       | Eleven behavioral scenarios and a reusable adapter harness; actual Node-RED evidence.                                                             |
+| Decision Review      | [Workbench](https://github.com/gbesse/decision-workbench)                                                                          | Persistent votes, disagreements, adjudication, dataset export and exact-state development/holdout separation. Local declarative reviewer names.   |
+| DecisionHub          | [Repository](https://github.com/gbesse/decision-hub) · [Private deployment](https://decisionhub-jev.agent-tresor-app.chatgpt.site) | Platform identity, owner-scoped database, immutable policies, bounded evaluations and revocable aggregate reports. Initial Site is owner-private. |
+
+The releases share DecisionPacks and reuse existing modules rather than creating six incompatible formats. Four new repositories were created; Review extends Workbench and Blocks extends Node-RED. All remain alpha. GitHub publication is not npm registry publication or community marketplace verification.
+
+Four bounded real Jev calls on synthetic inputs succeeded across Migrate, Catalog Repair and the actual Hub Worker code with a local database. Host/runtime conformance and browser journeys use explicit synthetic providers. These are integration checks, not accuracy benchmarks, cost-savings measurements or a guarantee of market adoption.

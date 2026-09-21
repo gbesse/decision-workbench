@@ -29,3 +29,7 @@ Published a French comparative study of eight LLM projects using pinned README v
 ## 2026-09-21 — Decision Review and reusable application host
 
 Added append-only reviewer votes, explicit disagreement adjudication, immutable model judgments, conflict-checked dataset publication and development/holdout state separation. Added local review UI and portable Decision Blocks trace import. Reused SQLite CAS, workspace lease and bounded local authentication for standalone apps. Validated 33 unit/API tests and seven Chromium journeys; no build or paid inference. Reviewer identities remain self-declared in local Workbench.
+
+## 2026-09-21 — Six-product launch map
+
+Published an explicit map of the six launches, their shared contracts, public repositories and verification limits. Four new repositories accompany the Review and Blocks extensions. The private Hub deployment completed successfully; live smoke evidence uses four bounded synthetic-input Jev calls.
