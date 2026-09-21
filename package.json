@@ -26,7 +26,8 @@
     "test": "node --test tests/*.test.mjs",
     "test:browser": "playwright test",
     "typecheck": "tsc --noEmit --allowJs --checkJs --skipLibCheck --target ES2022 --module NodeNext packages/ui/index.mjs",
-    "format:check": "prettier --check packages web scripts examples tests docs .github README.md CONTRIBUTING.md SECURITY.md ai package.json playwright.config.mjs"
+    "format:check": "prettier --check packages web scripts examples tests docs .github README.md CONTRIBUTING.md SECURITY.md ai package.json playwright.config.mjs",
+    "test:live": "node --env-file-if-exists=.local/jev.env scripts/live-smoke.mjs"
   },
   "dependencies": {
     "@gbesse/agent-capsule": "git+https://github.com/gbesse/agent-capsule.git#6f62c52faa3844a8a96f749a7f6dbeae36a5b84e",

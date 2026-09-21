@@ -11,3 +11,9 @@ Chose direct Node 24 ESM and static browser assets with no build step. Added SQL
 Verified parser and persistence behavior, API and webhook interactions, PDF extraction and four desktop/mobile Chromium journeys. Corrected form-name DOM shadowing discovered by browser tests, clarified local-only annotation behavior, and routed uncertain action failures to the host error reporter. Added source formatting, syntax checks, focused JSDoc type checking, CI, operating documentation and synthetic screenshots.
 
 The release is a single-operator local alpha. Live Jev inference and production multiuser deployment were not exercised; unsupported OCR, public plugin marketplace and autonomous retry behavior are documented explicitly.
+
+## 2026-09-21 — Real Jev integration verified
+
+Loaded the operator-provided key exclusively from ignored `.local/jev.env`. One initial request and six bounded end-to-end requests against `jev-1.13.0` passed. Verified generated-form evaluation, CSV mapping and batch decisions, human review, JSON agent approval with a local-only annotation, tool-free and rule-only replay, an installed transform and Question Forge development/held-out evaluation.
+
+Added the explicit `npm run test:live` command with a six-call ceiling, provider and HTTP deadlines, in-memory state, redacted error messages and no automatic CI execution. Updated documentation to distinguish the observed live integration from synthetic tests, model-quality claims and untested production deployments. No API key or customer data was committed. No external action writes occurred.

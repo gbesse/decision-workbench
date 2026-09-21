@@ -24,7 +24,7 @@ Open the private localhost link printed by the command. Click **Charger un exemp
 
 Demo mode uses explicit keyword fixtures, makes no Jev calls, and needs no API key. Its scores demonstrate the workflow; they are not accuracy measurements.
 
-For real inference, set `TYPESAFE_API_KEY` in the server environment and run `npm start` **without `--demo`**. The key stays on the server. The example pins `jev-1.13.0`; model availability and inference charges depend on your TypeSafe account. Live inference has not been validated with a paid account in this release.
+For real inference, set `TYPESAFE_API_KEY` in the server environment and run `npm start` **without `--demo`**. The key stays on the server. The example pins `jev-1.13.0`; model availability and inference charges depend on your TypeSafe account. A live smoke check against this model passed on 2026-09-21; see the [verification scope](docs/verification.md). This checks integration behavior, not model accuracy.
 
 ## Six modules, working together
 
@@ -92,6 +92,8 @@ npm run demo
 npx playwright install chromium
 npm run test:browser
 ```
+
+The optional `npm run test:live` loads `TYPESAFE_API_KEY` from the environment or the ignored `.local/jev.env` file. It sends at most six real provider requests using fictional fixtures, performs no external action writes, and is never run automatically by CI. To start the real local UI with that file, use `node --env-file=.local/jev.env scripts/start.mjs` without `--demo`.
 
 There is no build step. Tests cover module behavior, real local HTTP and webhook exchanges, PDF text extraction, state conflicts, failure reporting, and four Chromium user journeys. [Verification details](docs/verification.md).
 
