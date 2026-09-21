@@ -33,3 +33,5 @@ Added append-only reviewer votes, explicit disagreement adjudication, immutable 
 ## 2026-09-21 — Six-product launch map
 
 Published an explicit map of the six launches, their shared contracts, public repositories and verification limits. Four new repositories accompany the Review and Blocks extensions. The private Hub deployment completed successfully; live smoke evidence uses four bounded synthetic-input Jev calls.
+
+Updated the visible Workbench release label to v0.3 for the Review launch.
