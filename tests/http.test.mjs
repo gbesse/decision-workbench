@@ -51,6 +51,52 @@ test("API requires authentication, rejects foreign origins and serves a protecte
   );
   assert.match(await page.text(), /Decision Workbench/);
 });
+test("civic product persists sourced scans, separate operator review and an evidence-linked digest", async (t) => {
+  const { call, app } = await host(t);
+  const created = await call("civic/scan", {
+    identifier: "356000000",
+    activityDescription:
+      "Distribution de courrier et colis, services postaux et logistique du dernier kilomètre.",
+    maxDocuments: 2,
+  });
+  assert.equal(created.status, 201);
+  assert.equal(created.body.data.company.name, "LA POSTE");
+  assert.equal(created.body.data.signals.length, 2);
+  assert.equal(created.body.data.signals[0].state, "relevant");
+  assert.equal(created.body.data.signals[0].operatorReview, null);
+  const reviewed = await call("civic/review", {
+    id: created.body.id,
+    revision: created.body.revision,
+    signalId: created.body.data.signals[0].id,
+    decision: "confirmed",
+    note: "À transmettre",
+  });
+  assert.equal(reviewed.status, 200);
+  assert.equal(
+    reviewed.body.data.signals[0].operatorReview.decision,
+    "confirmed",
+  );
+  assert.equal(
+    reviewed.body.data.signals[0].probability,
+    created.body.data.signals[0].probability,
+  );
+  assert.ok(
+    app.store.events().some((event) => event.type === "civic.signal-reviewed"),
+  );
+  const digest = await fetch(
+    `http://127.0.0.1:${app.server.address().port}/api/civic/digest`,
+    {
+      method: "POST",
+      headers: {
+        authorization: "Bearer " + token,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({ id: created.body.id }),
+      signal: AbortSignal.timeout(10000),
+    },
+  );
+  assert.match(await digest.text(), /assemblee-nationale\.fr/);
+});
 test("complete import → batch → human correction → rule replay remains durable and traceable", async (t) => {
   const { call, app } = await host(t);
   const doc = (

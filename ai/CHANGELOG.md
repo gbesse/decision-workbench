@@ -2,6 +2,19 @@
 
 This file records the purpose and technical decisions behind agent-authored changes.
 
+## 2026-09-21 — v0.4.0 complete civic product and focused Workbench
+
+Added an end-to-end French company public-watch workflow: exact SIREN/SIRET resolution through the open Annuaire des
+Entreprises API, official Assemblée nationale RSS ingestion, pinned `jev-hemicycle` reuse, persisted relevance signals,
+separate human review and evidence-linked Markdown digest. The stored company profile deliberately excludes directors
+and finances. External calls use explicit deadlines and official-link restrictions; scans are limited to 20 paid model
+calls and fail visibly instead of exporting partial results.
+
+Recentered navigation and documentation around one lifecycle—source, decision, review, export—with company watch as
+the default complete example and authoring/forms/agents/plugins retained as advanced tools. Added three module tests,
+one API flow and one Chromium journey with a generated civic screenshot. The live three-call smoke resolved La Poste
+and correctly rejected three unrelated parliamentary publications at 0.01–0.02 relevance.
+
 ## 2026-09-21 — Decision Workbench v0.1.0 alpha
 
 Implemented six connected modules in one independent open-source repository: Decision Studio, StateBridge, JSON Agent Server, Decision UI Builder, Decision Sheets and Decision Plugins. Reused pinned versions of DecisionPacks, Question Forge and Agent Capsule.

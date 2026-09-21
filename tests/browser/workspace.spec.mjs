@@ -4,15 +4,39 @@ import { readFile } from "node:fs/promises";
 const open = async (page) => {
   await page.goto("/#token=browser-fixture-operator-token-24-plus");
   await expect(
-    page.getByRole("heading", { name: "Des données à la décision." }),
+    page.getByRole("heading", {
+      name: "Quels textes peuvent toucher cette entreprise ?",
+    }),
   ).toBeVisible();
 };
+test("company watch resolves a profile, evaluates sourced signals, records review and exports a digest", async ({
+  page,
+}) => {
+  await open(page);
+  await page.getByRole("button", { name: "Préremplir La Poste" }).click();
+  await page.getByRole("button", { name: "Analyser les publications" }).click();
+  await expect(page.getByRole("heading", { name: "LA POSTE" })).toBeVisible();
+  await expect(page.locator("tbody tr")).toHaveCount(2);
+  await page.getByRole("button", { name: "Relire" }).first().click();
+  await page.getByLabel("Décision humaine").selectOption("confirmed");
+  await page.getByLabel("Note", { exact: true }).fill("À transmettre");
+  await page.getByRole("button", { name: "Enregistrer la revue" }).click();
+  await expect(page.getByRole("button", { name: "confirmed" })).toBeVisible();
+  await page.getByRole("button", { name: "Fermer le message" }).click();
+  await page.screenshot({ path: "docs/workbench-civic.png", fullPage: true });
+  const download = page.waitForEvent("download");
+  await page
+    .getByRole("button", { name: "Exporter le digest Markdown" })
+    .click();
+  expect((await download).suggestedFilename()).toBe("veille-356000000.md");
+});
 test("end-to-end source, table decisions, correction, policy export and plugin execution", async ({
   page,
 }) => {
   const errors = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await open(page);
+  await page.getByRole("button", { name: "Atelier", exact: true }).click();
   await page.getByRole("button", { name: "Charger un exemple" }).click();
   await expect(
     page.getByRole("heading", { name: "Une décision par ligne." }),
@@ -55,7 +79,7 @@ test("end-to-end source, table decisions, correction, policy export and plugin e
   await page
     .getByRole("button", { name: "Fermer le détail", exact: true })
     .click();
-  await page.getByRole("button", { name: "Studio", exact: true }).click();
+  await page.getByRole("button", { name: "Atelier", exact: true }).click();
   if (await page.getByRole("button", { name: "Fermer le message" }).isVisible())
     await page.getByRole("button", { name: "Fermer le message" }).click();
   await page.evaluate(() => window.scrollTo(0, 0));
@@ -80,7 +104,7 @@ test("generated form and JSON agent approval produce real persisted results", as
 test("source uploads and mobile navigation remain usable", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await open(page);
-  await page.getByRole("button", { name: "StateBridge", exact: true }).click();
+  await page.getByRole("button", { name: "Sources", exact: true }).click();
   await page.getByLabel("Choisir un document local").setInputFiles({
     name: "example.json",
     mimeType: "application/json",
@@ -104,6 +128,7 @@ test("policy authoring and question comparison are available without a SDK", asy
   page,
 }) => {
   await open(page);
+  await page.getByRole("button", { name: "Atelier", exact: true }).click();
   await page.getByRole("button", { name: "Nouvelle politique" }).click();
   await page.getByLabel("Identifiant", { exact: true }).fill("browser-policy");
   await page.getByLabel("Nom du pack", { exact: true }).fill("browser/policy");
@@ -225,7 +250,7 @@ test("Decision Review creates a dataset from an imported trace and exports a hum
       },
     })
   ).json();
-  await page.getByRole("link", { name: "Decision Review" }).click();
+  await page.getByRole("link", { name: "Revue humaine" }).click();
   await page.locator("#trace").setInputFiles({
     name: "block-trace.json",
     mimeType: "application/json",

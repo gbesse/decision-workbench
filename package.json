@@ -1,7 +1,7 @@
 {
   "name": "@gbesse/decision-workbench",
-  "version": "0.3.0",
-  "description": "Visual decision studio, data bridge, JSON agent server, UI builder, decision sheets and worker plugins for Jev.",
+  "version": "0.4.0",
+  "description": "Turn sourced documents into evaluated, human-reviewed and exportable Jev decisions, including a French company public-watch workflow.",
   "type": "module",
   "license": "MIT",
   "engines": {
@@ -16,7 +16,8 @@
     "./sheets": "./packages/sheets/index.mjs",
     "./storage": "./packages/core/store.mjs",
     "./apps": "./packages/apps/server.mjs",
-    "./review": "./packages/review/index.mjs"
+    "./review": "./packages/review/index.mjs",
+    "./civic": "./packages/civic/index.mjs"
   },
   "bin": {
     "decision-workbench": "./scripts/start.mjs"
@@ -29,14 +30,17 @@
     "test:browser": "playwright test",
     "typecheck": "tsc --noEmit --allowJs --checkJs --skipLibCheck --target ES2022 --module NodeNext packages/ui/index.mjs",
     "format:check": "prettier --check packages web scripts examples tests docs .github README.md CONTRIBUTING.md SECURITY.md ai package.json playwright.config.mjs",
-    "test:live": "node --env-file-if-exists=.local/jev.env scripts/live-smoke.mjs"
+    "test:live": "node --env-file-if-exists=.local/jev.env scripts/live-smoke.mjs",
+    "test:civic:live": "node --env-file-if-exists=.local/jev.env scripts/civic-live-smoke.mjs"
   },
   "dependencies": {
     "@gbesse/agent-capsule": "git+https://github.com/gbesse/agent-capsule.git#6f62c52faa3844a8a96f749a7f6dbeae36a5b84e",
     "@gbesse/decisionpacks": "git+https://github.com/gbesse/decisionpacks.git#3c90b6e667c16653b9a6ae00b376df9bddbd8461",
+    "@gbesse/jev-hemicycle": "github:gbesse/jev-hemicycle#7c8e714",
     "@gbesse/question-forge": "git+https://github.com/gbesse/question-forge.git#0754a0c4bc0baa10e1f34bf7311d0d1020f81a09",
     "ajv": "8.20.0",
     "csv-parse": "7.0.2",
+    "fast-xml-parser": "^5.2.5",
     "parse5": "8.0.1",
     "pdfjs-dist": "5.4.624"
   },

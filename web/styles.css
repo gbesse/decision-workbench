@@ -105,6 +105,10 @@ a:hover {
 .workspace-label {
   margin: 0 12px 15px;
 }
+.nav-group {
+  margin-top: 22px;
+  margin-bottom: 8px;
+}
 .nav {
   width: 100%;
   display: flex;
@@ -282,6 +286,23 @@ main {
   font-size: 12px;
   color: var(--muted);
   line-height: 1.6;
+}
+.source-strip {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 11px 0 18px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.table-wrap small {
+  display: block;
+  margin-top: 5px;
+  color: var(--muted);
+}
+.table-wrap button {
+  white-space: nowrap;
 }
 .muted {
   color: var(--muted);

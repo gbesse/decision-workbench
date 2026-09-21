@@ -8,7 +8,7 @@ The repository uses Node's test runner and Chromium through Playwright. CI runs 
 - A local HTTP receiver verifies the real optional webhook: no call before approval, stable idempotency header, one delivery, and no second delivery during capsule replay.
 - HTTP tests cover authentication, browser-origin checks, CSP, import-to-review flows, immutable semantic versions, Question Forge wiring, explicit provider failures, non-responsive provider deadlines, and reporting of uncertain actions.
 - A generated valid PDF fixture exercises text extraction through the actual PDF plugin worker.
-- Six Chromium journeys cover source import, mapping, batch evaluation, correction, CSV download, plugin execution, generated forms, reviewed agent actions, mobile upload and source inspection, policy creation, question comparison, persistent visual form editing and separately approved two-step workflows.
+- Eight Chromium journeys cover the complete company-watch and digest flow, source import, mapping, batch evaluation, correction, CSV download, plugin execution, generated forms, reviewed agent actions, mobile upload and source inspection, policy creation, question comparison, persistent visual form editing, separately approved two-step workflows and Decision Review.
 - `npm run check` checks maintained JavaScript syntax. `npm run typecheck` checks the UI compiler's JSDoc types only. `npm run format:check` verifies source formatting.
 - `npm run demo` composes all six modules using the explicit synthetic provider.
 
@@ -33,6 +33,18 @@ Only fictional support requests were sent. No external action write was performe
 `npm run test:live` is deliberately absent from the default test command and CI. It loads `.local/jev.env` when present or uses `TYPESAFE_API_KEY` from the environment. Each invocation can consume up to six billable provider calls and exits on failure; re-running it is a new budget.
 
 This is a small live integration check, not an accuracy benchmark or load test. Production workloads, a remote webhook service, multiuser deployment and the cross-addon integration suite remain untested. The original v0.1.0 release was published before this live verification; its historical release notes reflect that earlier scope.
+
+## v0.4.0 civic workflow check
+
+The default suite adds exact company-response minimization, restricted official RSS links, reuse of the pinned
+`jev-hemicycle` adapter, review immutability, evidence-linked digest output, authenticated API persistence and a full
+Chromium journey. These checks use explicit offline fixtures.
+
+`npm run test:civic:live` passed on 2026-09-21. It resolved La Poste through the live Annuaire des Entreprises API,
+downloaded the live Assemblée nationale publications feed and made exactly three `jev-1.13.0` calls. All three current
+publications were unrelated to postal activity and received relevance probabilities of 0.02, 0.02 and 0.01. The run
+used 2,043 input tokens and 66 output tokens. This validates connectivity and obvious negatives, not recall or legal
+accuracy. No personal director data, financial data or credential was logged or stored.
 
 ## v0.2.0 extension checks
 

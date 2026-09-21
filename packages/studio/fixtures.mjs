@@ -34,12 +34,17 @@ export async function syntheticProvider({ model, state, questions }) {
           keys.map((k) => [k, k === chosen ? p : (1 - p) / (keys.length - 1)]),
         ),
       };
-    } else if (q.type === "noul")
+    } else if (q.type === "noul") {
+      const documentText = String(state?.document?.text ?? "").toLowerCase(),
+        topicText = String(state?.topic?.description ?? "").toLowerCase(),
+        civicRelevant =
+          /postal|courrier|colis|livraison/.test(documentText) &&
+          /postal|courrier|colis|livraison/.test(topicText);
       answers[id] = {
         type: "noul",
-        noul: /urgent|refund/.test(text) ? 0.92 : 0.2,
+        noul: civicRelevant || /urgent|refund/.test(text) ? 0.92 : 0.08,
       };
-    else {
+    } else {
       const probabilities = Object.fromEntries(
         q.criteria.map((_, i) => [String(i), i === 0 ? 1 : 0]),
       );

@@ -9,22 +9,24 @@ Decision Workbench connects existing decision modules and exposes the shared art
 | [DecisionPacks](https://github.com/gbesse/decisionpacks)   | `3c90b6e667c16653b9a6ae00b376df9bddbd8461` | Contracts, answer validation, provider adapter, rule replay |
 | [Question Forge](https://github.com/gbesse/question-forge) | `0754a0c4bc0baa10e1f34bf7311d0d1020f81a09` | Development/held-out candidate comparison                   |
 | [Agent Capsule](https://github.com/gbesse/agent-capsule)   | `6f62c52faa3844a8a96f749a7f6dbeae36a5b84e` | Reviewed action recording and tool-free replay              |
+| [Jev Hémicycle](https://github.com/gbesse/jev-hemicycle)   | `7c8e714`                                  | Sourced parliamentary-document normalization and relevance  |
 
 The package lock fixes the transitive dependency graph. No copied fork of these runtimes is maintained here. Updating a pin requires running the module, API and browser checks.
 
 ## Importable modules
 
-Install with `npm install --ignore-scripts github:gbesse/decision-workbench#v0.2.0`.
+Install with `npm install --ignore-scripts github:gbesse/decision-workbench#v0.4.0`.
 
-| Import                                   | Exports                                     |
-| ---------------------------------------- | ------------------------------------------- |
-| `@gbesse/decision-workbench`             | `createWorkbench`                           |
-| `@gbesse/decision-workbench/statebridge` | `extract`, `mapState`                       |
-| `@gbesse/decision-workbench/sheets`      | `evaluateRows`, `exportCsv`                 |
-| `@gbesse/decision-workbench/ui`          | `compileForm`, `validateForm`, `exportHtml` |
-| `@gbesse/decision-workbench/agent`       | `AgentServer`                               |
-| `@gbesse/decision-workbench/plugins`     | `PluginRegistry`, `approveLocalPlugin`      |
-| `@gbesse/decision-workbench/storage`     | `Store`, `Conflict`                         |
+| Import                                   | Exports                                                 |
+| ---------------------------------------- | ------------------------------------------------------- |
+| `@gbesse/decision-workbench`             | `createWorkbench`                                       |
+| `@gbesse/decision-workbench/statebridge` | `extract`, `mapState`                                   |
+| `@gbesse/decision-workbench/sheets`      | `evaluateRows`, `exportCsv`                             |
+| `@gbesse/decision-workbench/ui`          | `compileForm`, `validateForm`, `exportHtml`             |
+| `@gbesse/decision-workbench/agent`       | `AgentServer`                                           |
+| `@gbesse/decision-workbench/plugins`     | `PluginRegistry`, `approveLocalPlugin`                  |
+| `@gbesse/decision-workbench/storage`     | `Store`, `Conflict`                                     |
+| `@gbesse/decision-workbench/civic`       | Company and Assembly resolvers, scan, review and digest |
 
 These are JavaScript ESM APIs. The UI compiler is checked through JSDoc; the full package does not currently ship comprehensive TypeScript declarations. See `examples/offline-demo.mjs` for an executable composition of all six modules.
 

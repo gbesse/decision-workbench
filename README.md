@@ -1,17 +1,20 @@
 # Decision Workbench
 
-**Turn documents into reviewed, versioned Jev decisions — from a local web interface.**
+**From a sourced document to a reviewed, exportable Jev decision.**
 
 [![Verify](https://github.com/gbesse/decision-workbench/actions/workflows/verify.yml/badge.svg)](https://github.com/gbesse/decision-workbench/actions/workflows/verify.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-Import a spreadsheet or document, map its fields, try a decision policy, inspect the evidence, correct a result, and export the same contract into your application. Six connected modules share one workspace and one JSON API.
+Decision Workbench is a local product for importing evidence, evaluating a versioned decision, preserving the model
+output, recording a separate human review and exporting the result. Its first complete vertical workflow monitors
+French public information for a company identified by SIREN or SIRET.
 
-![The decision studio with a completed synthetic batch](docs/workbench-studio.png)
+![Company watch with sourced parliamentary signals](docs/workbench-civic.png)
 
-**v0.2.0 alpha · Node.js 24+ · MIT · independent of TypeSafe.** Browser UI: French. Code and integration documentation: English. Jev inference is a separate TypeSafe service; this project does not redistribute model weights.
+**v0.4.0 · Node.js 24+ · MIT · independent of TypeSafe.** The browser UI is French. Jev inference is a separate paid
+TypeSafe service; this project does not redistribute model weights.
 
-## Run in three minutes
+## Try the complete product offline
 
 ```sh
 git clone https://github.com/gbesse/decision-workbench.git
@@ -20,39 +23,49 @@ npm ci --ignore-scripts
 npm start -- --demo
 ```
 
-Open the private localhost link printed by the command. Click **Charger un exemple**, verify the field mapping, and evaluate four sample rows. Inspect a result, record a human correction, then explore **UI Builder**, **JSON Agents**, and **Plugins**.
+Open the private localhost link, choose **Préremplir La Poste**, then **Analyser les publications**. The offline example
+resolves a company profile, evaluates two sourced fixtures, lets you confirm or dismiss a signal and exports a Markdown
+digest. It makes no network or Jev call and is not an accuracy demonstration.
 
-Demo mode uses explicit keyword fixtures, makes no Jev calls, and needs no API key. Its scores demonstrate the workflow; they are not accuracy measurements.
+For the real workflow:
 
-For real inference, set `TYPESAFE_API_KEY` in the server environment and run `npm start` **without `--demo`**. The key stays on the server. The example pins `jev-1.13.0`; model availability and inference charges depend on your TypeSafe account. A live smoke check against this model passed on 2026-09-21; see the [verification scope](docs/verification.md). This checks integration behavior, not model accuracy.
+```sh
+TYPESAFE_API_KEY=... npm start
+```
 
-## Six modules, working together
+The server fetches the public company profile and official Assembly feed, then makes one paid Jev request per selected
+publication. The key stays server-side. Each scan is limited to 20 documents and every source call has a deadline.
 
-| Module                  | Available in this alpha                                                                                                                  | Export / integration                                     |
-| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
-| **Decision Studio**     | Create, edit and version policies; compare question candidates on development and held-out examples                                      | DecisionPacks JSON, experiment records                   |
-| **StateBridge**         | Import CSV, JSON, text, HTML, simple email and text PDFs; inspect source references; map typed fields                                    | Source records, mapped state and evidence                |
-| **Decision Sheets**     | Evaluate rows within a call budget; retain per-row errors; record human corrections; compare decision rules offline                      | CSV and complete JSON run                                |
-| **Decision UI Builder** | Visually edit labels, controls, order, help and select options; save and evaluate versioned layouts                                      | Portable UI contract and standalone HTML input collector |
-| **JSON Agent Server**   | One policy decision → 1–10 individually reviewed actions, prior-result bindings, durable execution and replay                            | Authenticated JSON API; optional webhook action          |
-| **Decision Plugins**    | Register trusted local extractors, transforms and actions with versioned JSON contracts, approved entrypoint hashes and worker deadlines | Local plugin configuration and catalogue                 |
+## One workflow, two entries
 
-This is one coherent application, with reusable module exports. It is not six disconnected demo repositories.
+| Stage    | Company watch                                     | Your own documents                             |
+| -------- | ------------------------------------------------- | ---------------------------------------------- |
+| Source   | Annuaire des Entreprises + Assemblée nationale    | CSV, JSON, text, HTML, email or textual PDF    |
+| State    | Company profile + declared activity + publication | Explicit field mapping with evidence pointers  |
+| Decision | Relevance signal through `jev-hemicycle`          | Versioned DecisionPack                         |
+| Review   | Confirm, dismiss or keep pending                  | Correct a row without overwriting model output |
+| Export   | Evidence-linked Markdown digest                   | CSV, JSON, DecisionPack or evaluation dataset  |
 
-The simple Studio editor targets a Choice question over `text`. The complete JSON editor supports the broader DecisionPacks contract. HTML exports prepare input JSON; connected inference belongs on your server. The agent supports bounded sequential actions, each separately approved; it is not an autonomous general-purpose planner.
+This is the product spine. Policy authoring, question comparison, generated forms, reviewed JSON actions and trusted
+plugins remain available as advanced tools, but they all serve the same source → decision → review → export lifecycle.
 
-## Extend existing projects
+## Existing projects reused directly
 
-The implementation reuses these existing repositories at pinned commits:
+- [Jev Hémicycle](https://github.com/gbesse/jev-hemicycle) normalizes and evaluates parliamentary publications.
+- [DecisionPacks](https://github.com/gbesse/decisionpacks) validates policies, calls Jev and replays decision rules.
+- [Question Forge](https://github.com/gbesse/question-forge) compares wording on development and held-out examples.
+- [Agent Capsule](https://github.com/gbesse/agent-capsule) captures approved actions for tool-free replay.
 
-- [DecisionPacks](https://github.com/gbesse/decisionpacks): policy validation, Jev adapter, decision records and rule replay.
-- [Question Forge](https://github.com/gbesse/question-forge): question comparison with a separate held-out set.
-- [Agent Capsule](https://github.com/gbesse/agent-capsule): action capture and replay without calling the tool again.
+Pinned Git commits in `package.json` make the reused implementation auditable. The Workbench adds source ingestion,
+persistence, authentication, browser workflows and human review rather than copying these repositories.
 
-Export a DecisionPack for an existing addon, or call the workbench JSON API from any language. See [integration and reuse](docs/integration.md) for examples and the limits of cross-addon compatibility.
+## Generic document workflow
+
+Switch to **Atelier** to edit a policy, **Sources** to import evidence, then **Évaluations** to map fields and run a
+bounded batch. Corrections remain separate from the original judgment. Decision Review can require multiple votes and
+an adjudication before exporting development or holdout cases.
 
 ```js
-// Purpose: Import a supported source and prepare typed state for an existing decision policy.
 import { extract, mapState } from "@gbesse/decision-workbench/statebridge";
 
 const source = await extract({
@@ -65,58 +78,39 @@ const { state, evidence } = mapState(source, "1", {
 });
 ```
 
-For use as a dependency, install the GitHub tag: `npm install --ignore-scripts github:gbesse/decision-workbench#v0.2.0`. No npm registry publication is required.
-
-## Plugins that run
-
-```sh
-# Inspect the example source before approving its entrypoint hash.
-node examples/write-plugin-config.mjs
-npm start -- --demo --plugins .local/plugin-config.json
-```
-
-The email-redaction transform appears in the catalogue and can be tested in the browser. A second example sends approved actions to an operator-configured webhook with an idempotency key. [Plugin guide](docs/plugins.md).
-
-Workers impose a deadline and a JavaScript heap limit. They are **not an OS or network sandbox**. Only install trusted code; the entrypoint hash does not certify dependencies.
+Importable modules include `./civic`, `./statebridge`, `./review`, `./sheets`, `./ui`, `./agent`, `./plugins`, `./apps`
+and `./storage`. Install the tagged repository with
+`npm install --ignore-scripts github:gbesse/decision-workbench#v0.4.0`.
 
 ## Operate and verify
 
-Workspace data is stored in `.local/workbench.sqlite`. One process owns a workspace. Stop with Ctrl+C. Use `--database :memory:` for disposable sessions, `--port 4318` for another port, or `WORKBENCH_TOKEN` to supply a stable token of at least 24 characters.
+Workspace data is stored in `.local/workbench.sqlite`. One process owns a workspace. The server binds to loopback,
+requires a local bearer token and rejects foreign browser origins. Stop with Ctrl+C; use `--database :memory:` for a
+disposable session or `--port 4318` for another port.
 
 ```sh
+npm run format:check
 npm run check
 npm run typecheck
-npm run format:check
 npm test
 npm run demo
 npx playwright install chromium
 npm run test:browser
 ```
 
-The optional `npm run test:live` loads `TYPESAFE_API_KEY` from the environment or the ignored `.local/jev.env` file. It sends at most six real provider requests using fictional fixtures, performs no external action writes, and is never run automatically by CI. To start the real local UI with that file, use `node --env-file=.local/jev.env scripts/start.mjs` without `--demo`.
+`npm run test:live` makes at most six paid Jev calls using fictional generic examples. `npm run test:civic:live`
+resolves a real public profile, fetches the live Assembly feed and makes exactly three paid calls. Neither runs in CI.
 
-There is no build step. Tests cover module behavior, real local HTTP and webhook exchanges, PDF text extraction, state conflicts, failure reporting, and six Chromium user journeys. [Verification details](docs/verification.md).
-
-This alpha is for a **single operator on localhost**. It has no team accounts, hosted deployment, OCR, plugin marketplace or automatic agent retries. Keep an exported copy of important policies and follow the [operations guide](docs/architecture.md) for interrupted runs and backup. [Security model](SECURITY.md).
+There is no build step. Default verification covers 37 module/API tests and eight Chromium journeys. This remains a
+single-operator localhost application: no accounts, hosted deployment, OCR, scheduler, automatic email or legal advice.
 
 ## Documentation
 
-- [Editable forms and multi-step workflows](docs/forms-and-sequences.md)
-- [Historical LLM tooling study and product priorities — French](docs/research/launch-patterns.md)
+- [Company public watch](docs/civic-watch.md)
+- [Verification scope](docs/verification.md)
 - [JSON API](docs/api.md)
-- [Plugins and reviewed webhooks](docs/plugins.md)
 - [Architecture, persistence and recovery](docs/architecture.md)
-- [Integration with existing modules and addons](docs/integration.md)
-- [Contributing](CONTRIBUTING.md)
-
-The opportunity is a shared format for policies, evidence, corrections and extensions that many integrations can reuse. Adoption and useful plugins can compound; an early release alone does not guarantee a defensible market position.
-
-## Decision Review (v0.3)
-
-Open Decision Review from the sidebar. Create a review set from a finished Sheets job or import a Decision Blocks JSON trace `{schemaVersion:1,pack,rows:[{state,record}]}`. Each reviewer records a name, finite outcome and reason; disagreements block dataset exports until adjudicated. New votes invalidate adjudication. Original predictions and all human votes remain available. Reviewer names are **self-declared** in this local, single-operator workspace; they are not authenticated accounts.
-
-Select cases, a development/holdout split and minimum reviewer count before exporting. Exported states cannot enter both splits in this database. This guards exact duplicates, not semantically equivalent examples. Dataset exports include the policy, provenance and original judgments; keep them private. Imported records are structurally checked against their policy/state, not cryptographically authenticated against the original provider.
-
-The `@gbesse/decision-workbench/apps` export supplies the same loopback-only token authentication and SQLite persistence for Decision Migrate and Catalog Repair. It is not an internet-facing server.
-
-See [the six-product launch map](docs/launch-ecosystem.md) for related apps, native Decision Blocks, conformance evidence and the private DecisionHub deployment.
+- [Integration and reusable modules](docs/integration.md)
+- [Editable forms and reviewed action sequences](docs/forms-and-sequences.md)
+- [Trusted plugins and reviewed webhooks](docs/plugins.md)
+- [Security model](SECURITY.md)

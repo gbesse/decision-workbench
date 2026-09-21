@@ -1,6 +1,6 @@
 # Local JSON API
 
-This guide describes the version 0.2 API used by the browser and external clients. The contract is alpha and may change before 1.0.
+This guide describes the version 0.4 API used by the browser and external clients. The contract is alpha and may change before 1.0.
 
 The CLI binds `127.0.0.1:4317`. Every `/api/` route requires `Authorization: Bearer <local-operator-token>`. POST bodies require `Content-Type: application/json`. Foreign browser origins are rejected. The browser token is not the TypeSafe API key.
 
@@ -13,6 +13,7 @@ Objects use `{id, revision, updated, data}`. Supply the current revision on poli
 | GET    | `/api/document/:id`    | Complete extracted document                                               |
 | GET    | `/api/job/:id`         | Batch state and saved row results                                         |
 | GET    | `/api/run/:id`         | Agent decision, approval state and optional trace                         |
+| GET    | `/api/civic-watch/:id` | Company profile, sourced signals, scores and operator reviews             |
 | GET    | `/api/events`          | Latest 100 events                                                         |
 | POST   | `/api/import`          | `{name, format, content, encoding?}`; `encoding: "base64"` for PDF        |
 | POST   | `/api/map`             | `{documentId, rowId, mapping}`                                            |
@@ -30,6 +31,9 @@ Objects use `{id, revision, updated, data}`. Supply the current revision on poli
 | POST   | `/api/runs/approve`    | `{id, revision}`; may execute one external action                         |
 | POST   | `/api/runs/reject`     | `{id, revision}`                                                          |
 | POST   | `/api/runs/replay`     | `{id}`; replay recorded action without executing tools                    |
+| POST   | `/api/civic/scan`      | `{identifier, activityDescription, maxDocuments}`; 1–20 paid calls        |
+| POST   | `/api/civic/review`    | `{id, revision, signalId, decision, note?}`                               |
+| POST   | `/api/civic/digest`    | `{id}`; returns an evidence-linked Markdown digest                        |
 
 ## Evaluate from another application
 

@@ -26,6 +26,15 @@ import {
   resolve,
   exportDataset,
 } from "../review/index.mjs";
+import {
+  scanCivicWatch,
+  reviewCivicSignal,
+  renderCivicDigest,
+} from "../civic/index.mjs";
+import {
+  demoCompanyResolver,
+  demoDocumentResolver,
+} from "../civic/fixtures.mjs";
 class HttpError extends Error {
   constructor(status, message) {
     super(message);
@@ -40,6 +49,8 @@ export async function createWorkbench({
   pluginConfig,
   onError = console.error,
   timeoutMs = 30000,
+  civicCompanyResolver,
+  civicDocumentResolver,
 } = {}) {
   ensure(
     typeof token === "string" && token.length >= 24,
@@ -315,7 +326,60 @@ export async function createWorkbench({
           runs: store.list("run").slice(0, 30),
           plugins: registry.list(),
           experiments: store.list("experiment").slice(0, 10),
+          civicWatches: store.list("civic-watch").slice(0, 20),
         });
+        return;
+      }
+      if (req.method === "POST" && path === "/api/civic/scan") {
+        providerReady();
+        const normalizedIdentifier = String(body.identifier ?? "").replace(
+          /\s/g,
+          "",
+        );
+        const previous = store
+          .list("civic-watch")
+          .find(
+            (watch) => watch.data.company.identifier === normalizedIdentifier,
+          )?.data;
+        const watch = await scanCivicWatch(
+          { ...body, previousWatch: previous ?? null },
+          {
+            provider: actualProvider,
+            companyResolver:
+              civicCompanyResolver ?? (demo ? demoCompanyResolver : undefined),
+            documentResolver:
+              civicDocumentResolver ??
+              (demo ? demoDocumentResolver : undefined),
+          },
+        );
+        send(201, store.create("civic-watch", { ...watch, mode }));
+        return;
+      }
+      if (req.method === "POST" && path === "/api/civic/review") {
+        const watch = requireObject("civic-watch", body.id);
+        if (watch.revision !== body.revision) throw new Conflict();
+        const updated = reviewCivicSignal(watch.data, body);
+        const saved = store.put(
+          "civic-watch",
+          watch.id,
+          updated,
+          watch.revision,
+        );
+        store.event("civic.signal-reviewed", {
+          watchId: watch.id,
+          signalId: body.signalId,
+          decision: body.decision,
+        });
+        send(200, saved);
+        return;
+      }
+      if (req.method === "POST" && path === "/api/civic/digest") {
+        const watch = requireObject("civic-watch", body.id);
+        send(
+          200,
+          renderCivicDigest(watch.data),
+          "text/markdown; charset=utf-8",
+        );
         return;
       }
       if (req.method === "GET" && path === "/api/review-sets") {
@@ -387,7 +451,7 @@ export async function createWorkbench({
       }
       if (
         req.method === "GET" &&
-        /^\/api\/(document|job|run)\/[^/]+$/.test(path)
+        /^\/api\/(document|job|run|civic-watch)\/[^/]+$/.test(path)
       ) {
         const [, , kind, id] = path.split("/");
         send(200, requireObject(kind, decodeURIComponent(id)));

@@ -15,7 +15,7 @@ const $ = (selector) => document.querySelector(selector),
 const json = (value) => JSON.stringify(value, null, 2),
   pretty = (value) => `<pre>${escape(json(value))}</pre>`;
 const state = {
-  view: "studio",
+  view: "civic",
   workspace: null,
   packId: "support-triage",
   document: null,
@@ -25,6 +25,7 @@ const state = {
   form: null,
   formDraft: null,
   formPreview: null,
+  civicWatch: null,
   token: sessionStorage.getItem("workbench-token") ?? "",
 };
 const hash = new URLSearchParams(location.hash.slice(1));
@@ -138,6 +139,12 @@ function listRow({
 }
 async function refresh() {
   state.workspace = await api("workspace");
+  if (state.civicWatch) {
+    state.civicWatch =
+      state.workspace.civicWatches.find(
+        (watch) => watch.id === state.civicWatch.id,
+      ) ?? state.civicWatch;
+  } else state.civicWatch = state.workspace.civicWatches[0] ?? null;
   $("#login").hidden = true;
   $("#workspace").hidden = false;
   $("#connection-state").textContent = "Workspace connecté";
@@ -155,6 +162,11 @@ async function refresh() {
   render();
 }
 const viewText = {
+  civic: [
+    "IDENTIFIER · SURVEILLER · RELIRE",
+    "Quels textes peuvent toucher cette entreprise ?",
+    "Partez d’un SIREN ou SIRET, analysez les publications officielles et conservez chaque source avant revue humaine.",
+  ],
   studio: [
     "CONCEVOIR · TESTER · VERSIONNER",
     "Des données à la décision.",
@@ -201,17 +213,25 @@ function render() {
       agents: "JSON Agents",
       plugins: "Plugins",
       studio: "Studio",
+      civic: "Veille entreprise",
     }[state.view];
+  $("#load-demo").hidden = state.view === "civic";
   document
     .querySelectorAll("[data-view]")
     .forEach((button) =>
       button.classList.toggle("active", button.dataset.view === state.view),
     );
+  const reviews = state.workspace.civicWatches.reduce(
+    (count, watch) =>
+      count +
+      watch.data.signals.filter((signal) => signal.operatorReview).length,
+    0,
+  );
   $("#metrics").innerHTML = [
-    ["Politiques", state.workspace.packs.length, "versionnées"],
+    ["Veilles", state.workspace.civicWatches.length, "persistées"],
     ["Sources", state.workspace.documents.length, "importées"],
-    ["Traitements", state.workspace.jobs.length, "persistés"],
-    ["Plugins", state.workspace.plugins.length, "activés"],
+    ["Évaluations", state.workspace.jobs.length, "par lots"],
+    ["Revues", reviews, "signaux civiques"],
   ]
     .map(
       ([label, value, note]) =>
@@ -219,6 +239,7 @@ function render() {
     )
     .join("");
   $("#content").innerHTML = {
+    civic: civicView,
     studio: studioView,
     bridge: bridgeView,
     sheets: sheetsView,
@@ -226,6 +247,35 @@ function render() {
     agents: agentsView,
     plugins: pluginsView,
   }[state.view]();
+}
+function civicView() {
+  const watch = state.civicWatch,
+    signals = watch?.data.signals ?? [];
+  return `<div class="grid"><div><section class="panel"><div class="panel-head"><h2>Nouvelle veille</h2><span class="badge">Sources officielles</span></div><form id="civic-form"><div class="field-row"><label>SIREN ou SIRET<input name="identifier" inputmode="numeric" pattern="[0-9 ]{9,18}" placeholder="356 000 000" required></label><label>Documents à analyser<input name="maxDocuments" type="number" min="1" max="20" value="10" required></label></div><label>Activité à surveiller<textarea name="activityDescription" minlength="10" maxlength="2000" required placeholder="Décrivez les produits, services, clients et contraintes à surveiller."></textarea></label><div class="actions"><button class="primary">Analyser les publications</button><button type="button" data-action="prefill-civic">Préremplir La Poste</button></div></form><p>Le profil vient de l’Annuaire des Entreprises. Les publications viennent du flux officiel de l’Assemblée nationale. Jev mesure une pertinence de veille ; il ne détermine pas le droit applicable.</p></section>${list(
+    "Veilles enregistrées",
+    state.workspace.civicWatches.map((item) =>
+      listRow({
+        action: "open-civic-watch",
+        id: item.id,
+        title: item.data.company.name,
+        subtitle: `${item.data.signals.length} publications · ${item.data.counts.relevant} pertinentes`,
+        date: item.updated,
+        icon: "◎",
+        badge: item.data.mode,
+      }),
+    ),
+  )}</div><div>${
+    watch
+      ? `<section class="panel"><div class="panel-head"><div><h2>${escape(watch.data.company.name)}</h2><p>SIREN ${escape(watch.data.company.siren)} · ${escape(watch.data.company.activityCode ?? "activité non renseignée")}</p></div><span class="badge">${watch.data.counts.relevant} pertinents · ${watch.data.counts.unknown} incertains</span></div><p>${escape(watch.data.activityDescription)}</p><div class="source-strip"><a href="${escape(watch.data.company.sourceUrl)}" target="_blank" rel="noreferrer">Profil officiel ↗</a><span>${escape(watch.data.company.address ?? "Adresse non renseignée")}</span></div><div class="table-wrap"><table><thead><tr><th>Publication</th><th>Pertinence</th><th>État</th><th>Revue</th></tr></thead><tbody>${signals
+          .map(
+            (signal) =>
+              `<tr><td><a href="${escape(signal.sourceUrl)}" target="_blank" rel="noreferrer">${escape(signal.title)}</a><small>${escape(signal.source)}${signal.date ? ` · ${escape(signal.date.slice(0, 10))}` : ""}</small></td><td>${(signal.probability * 100).toFixed(1)} %</td><td><span class="badge ${signal.uncertain ? "warning" : ""}">${escape(signal.state)}</span></td><td><button data-action="inspect-civic-signal" data-id="${escape(signal.id)}">${signal.operatorReview ? escape(signal.operatorReview.decision) : "Relire"}</button></td></tr>`,
+          )
+          .join(
+            "",
+          )}</tbody></table></div><div class="actions"><button data-action="export-civic-digest">Exporter le digest Markdown ↓</button></div><p>${escape(watch.data.disclaimer)}</p></section>`
+      : '<section class="panel"><h2>Du SIRET au signal sourcé</h2><div class="flow"><span>Entreprise</span>→<span>Publications</span>→<span>Pertinence</span>→<span>Revue</span></div><div class="step"><span class="step-number">1</span><div><strong>Résoudre le profil officiel</strong><p>Nom, établissement, activité NAF et adresse sont conservés avec leur source.</p></div></div><div class="step"><span class="step-number">2</span><div><strong>Évaluer chaque publication</strong><p>Le module existant jev-hemicycle classe les documents sans masquer les incertitudes.</p></div></div><div class="step"><span class="step-number">3</span><div><strong>Relire et exporter</strong><p>La décision humaine reste distincte du score Jev et le digest garde les liens officiels.</p></div></div></section>'
+  }</div></div>`;
 }
 function studioView() {
   const current = selectedPack(),
@@ -542,6 +592,33 @@ async function openRun(id) {
   );
 }
 const actions = {
+  "prefill-civic": () => {
+    const form = $("#civic-form");
+    form.elements.identifier.value = "356 000 000";
+    form.elements.activityDescription.value =
+      "Distribution de courrier et de colis, services postaux, logistique du dernier kilomètre et réseau de points de contact.";
+    form.elements.maxDocuments.value = "2";
+  },
+  "open-civic-watch": async (button) => {
+    state.civicWatch = await api("civic-watch/" + button.dataset.id);
+    state.view = "civic";
+    render();
+  },
+  "inspect-civic-signal": (button) => {
+    const signal = state.civicWatch.data.signals.find(
+      (item) => item.id === button.dataset.id,
+    );
+    detail(
+      "Signal de veille",
+      `<h3>${escape(signal.title)}</h3><p><a href="${escape(signal.sourceUrl)}" target="_blank" rel="noreferrer">Ouvrir la source officielle ↗</a></p>${signal.excerpt ? `<p>${escape(signal.excerpt)}</p>` : ""}${pretty({ probability: signal.probability, state: signal.state, uncertain: signal.uncertain, transition: signal.transition, operatorReview: signal.operatorReview })}<form id="civic-review-form" data-signal="${escape(signal.id)}"><label>Décision humaine<select name="decision"><option value="pending">À revoir</option><option value="confirmed" ${signal.operatorReview?.decision === "confirmed" ? "selected" : ""}>Confirmé</option><option value="dismissed" ${signal.operatorReview?.decision === "dismissed" ? "selected" : ""}>Écarté</option></select></label><label>Note<textarea name="note" maxlength="2000">${escape(signal.operatorReview?.note ?? "")}</textarea></label><button class="primary">Enregistrer la revue</button></form>`,
+    );
+  },
+  "export-civic-digest": async () =>
+    download(
+      `veille-${state.civicWatch.data.company.siren}.md`,
+      await api("civic/digest", { id: state.civicWatch.id }, { text: true }),
+      "text/markdown",
+    ),
   "move-field": (button) => {
     const draft = getFormDraft();
     draft.layout = readLayout();
@@ -814,6 +891,27 @@ document.addEventListener("submit", (event) => {
       state.formPreview = null;
       await refresh();
       notice("Formulaire enregistré.", "success");
+    }
+    if (formId === "civic-form") {
+      state.civicWatch = await api("civic/scan", {
+        identifier: data.get("identifier"),
+        activityDescription: data.get("activityDescription"),
+        maxDocuments: Number(data.get("maxDocuments")),
+      });
+      await refresh();
+      notice("Veille enregistrée avec ses sources officielles.", "success");
+    }
+    if (formId === "civic-review-form") {
+      state.civicWatch = await api("civic/review", {
+        id: state.civicWatch.id,
+        revision: state.civicWatch.revision,
+        signalId: form.dataset.signal,
+        decision: data.get("decision"),
+        note: data.get("note"),
+      });
+      $("#detail").close();
+      await refresh();
+      notice("Revue humaine enregistrée séparément du score Jev.", "success");
     }
     if (formId === "login-form") {
       state.token = $("#token").value.trim();
