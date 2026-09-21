@@ -1,0 +1,6 @@
+# Purpose: Exclude generated artifacts and local runtime data from formatting.
+node_modules
+.local
+test-results
+playwright-report
+package-lock.json

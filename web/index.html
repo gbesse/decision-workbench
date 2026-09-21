@@ -1,0 +1,107 @@
+<!doctype html>
+<!-- Purpose: Local browser workspace for composing, testing and operating versioned Jev decisions. -->
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Decision Workbench</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <script src="/app.js" type="module"></script>
+  </head>
+  <body>
+    <aside class="sidebar">
+      <a class="brand" href="#studio"
+        ><span class="brand-icon">d.</span
+        ><span>Decision<br /><strong>Workbench</strong></span></a
+      >
+      <div class="workspace-label">ESPACE LOCAL</div>
+      <nav aria-label="Modules">
+        <button data-view="studio" class="nav active">
+          <span aria-hidden="true">◈</span>Studio</button
+        ><button data-view="bridge" class="nav">
+          <span aria-hidden="true">⇥</span>StateBridge</button
+        ><button data-view="sheets" class="nav">
+          <span aria-hidden="true">▦</span>Decision Sheets</button
+        ><button data-view="forms" class="nav">
+          <span aria-hidden="true">▤</span>UI Builder</button
+        ><button data-view="agents" class="nav">
+          <span aria-hidden="true">⌘</span>JSON Agents</button
+        ><button data-view="plugins" class="nav">
+          <span aria-hidden="true">⬡</span>Plugins
+        </button>
+      </nav>
+      <div class="sidebar-bottom">
+        <span class="status-dot"></span
+        ><span id="connection-state">Connexion requise</span
+        ><button id="logout" class="text-button">Déconnecter</button
+        ><span class="version">v0.1 · Open source</span>
+      </div>
+    </aside>
+    <main>
+      <header class="topbar">
+        <span id="breadcrumb">Workspace / Studio</span>
+        <div class="top-actions">
+          <span id="mode" class="badge">Local</span
+          ><button id="refresh" class="quiet">Actualiser</button
+          ><a
+            href="https://github.com/gbesse/decision-workbench"
+            target="_blank"
+            rel="noreferrer"
+            >GitHub ↗</a
+          >
+        </div>
+      </header>
+      <div id="notice" role="alert" hidden>
+        <span id="notice-message"></span
+        ><button id="notice-close" aria-label="Fermer le message">×</button>
+      </div>
+      <section id="login" class="login panel">
+        <div class="eyebrow">CONNEXION LOCALE</div>
+        <h1>Votre espace de décision.</h1>
+        <p>
+          Ouvrez le lien affiché dans le terminal, ou collez le jeton d’accès
+          local. La clé Jev reste sur le serveur.
+        </p>
+        <form id="login-form">
+          <label
+            >Jeton local<input
+              id="token"
+              type="password"
+              autocomplete="off"
+              required /></label
+          ><button class="primary">Ouvrir le workspace</button>
+        </form>
+      </section>
+      <div id="workspace" hidden>
+        <section class="page-heading">
+          <div>
+            <div class="eyebrow" id="eyebrow">
+              CONCEVOIR · TESTER · VERSIONNER
+            </div>
+            <h1 id="page-title">Des données à la décision.</h1>
+            <p id="page-description">
+              Créez une politique, testez ses résultats et exportez un contrat
+              réutilisable.
+            </p>
+          </div>
+          <button id="load-demo" class="primary">Charger un exemple ↗</button>
+        </section>
+        <section class="metrics" id="metrics"></section>
+        <div id="content"></div>
+      </div>
+      <footer>
+        Decision Workbench <span>·</span> Indépendant de TypeSafe
+        <span>·</span> Données conservées dans votre workspace local
+      </footer>
+    </main>
+    <dialog id="detail">
+      <div class="dialog-top">
+        <h2 id="detail-title">Détail</h2>
+        <button id="close-detail" aria-label="Fermer le détail" class="quiet">
+          Fermer ✕
+        </button>
+      </div>
+      <div id="detail-body"></div>
+    </dialog>
+  </body>
+</html>
