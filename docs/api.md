@@ -1,6 +1,6 @@
 # Local JSON API
 
-This guide describes the version 0.1 API used by the browser and external clients. The contract is alpha and may change before 1.0.
+This guide describes the version 0.2 API used by the browser and external clients. The contract is alpha and may change before 1.0.
 
 The CLI binds `127.0.0.1:4317`. Every `/api/` route requires `Authorization: Bearer <local-operator-token>`. POST bodies require `Content-Type: application/json`. Foreign browser origins are rejected. The browser token is not the TypeSafe API key.
 
@@ -78,3 +78,5 @@ A mapping looks like `{ "text": { "source": "message", "type": "string" } }`. Ty
 The same request ID and content return the existing run. Different content under that ID receives 409. If the decision has an action route, its state is `awaiting_review`; approval must include the returned revision. No matching route means completion without an action. State bindings address a top-level field, not an arbitrary expression. The included annotation action returns a local value only; use the [webhook plugin](plugins.md) for a reviewed external write.
 
 Poll batches with a reasonable interval (the UI uses 900 ms) until their status leaves `running`. The response preserves row-level errors; `completed_with_errors` is not a successful clean batch. Repeating a job POST creates a new batch and may consume additional inference calls.
+
+Form layout routes, version checks and multi-step agent bindings are documented in [forms and sequences](forms-and-sequences.md). Existing single-action route inputs remain supported.

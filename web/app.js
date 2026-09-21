@@ -23,6 +23,8 @@ const state = {
   upload: null,
   mapping: null,
   form: null,
+  formDraft: null,
+  formPreview: null,
   token: sessionStorage.getItem("workbench-token") ?? "",
 };
 const hash = new URLSearchParams(location.hash.slice(1));
@@ -389,18 +391,81 @@ function sheetsView() {
 function resultsTable(job) {
   return `<div class="table-wrap"><table><thead><tr><th>Ligne</th><th>Données</th><th>Décision</th><th>Revue humaine</th><th>Détail</th></tr></thead><tbody>${job.data.results.map((r) => `<tr><td>${escape(r.rowId)}</td><td>${escape(JSON.stringify(r.state).slice(0, 150))}</td><td><span class="${r.status === "failed" ? "error" : ""}">${escape(r.record?.outcome ?? r.error)}</span></td><td>${escape(r.review?.outcome ?? "—")}</td><td><button data-action="review-row" data-id="${escape(r.rowId)}">Inspecter</button></td></tr>`).join("") || '<tr><td colspan="5">En attente des premiers résultats…</td></tr>'}</tbody></table></div>`;
 }
+function currentFormEntry() {
+  return state.workspace.forms.find(
+    (item) => item.packId === selectedPack().id,
+  );
+}
+function getFormDraft() {
+  const pack = selectedPack(),
+    entry = currentFormEntry();
+  if (
+    !state.formDraft ||
+    state.formDraft.packId !== pack.id ||
+    state.formDraft.packRevision !== pack.revision ||
+    state.formDraft.revision !== (entry.layout?.revision ?? 0)
+  ) {
+    state.formDraft = {
+      packId: pack.id,
+      packRevision: pack.revision,
+      revision: entry.layout?.revision ?? 0,
+      layout: structuredClone(entry.form),
+    };
+    state.formPreview = null;
+  }
+  return state.formDraft;
+}
+function readLayout() {
+  return {
+    title: $("#layout-title").value,
+    description: $("#layout-description").value,
+    fields: [...document.querySelectorAll(".layout-field")].map((node) => ({
+      name: node.dataset.name,
+      label: node.querySelector("[name=label]").value,
+      control: node.querySelector("[name=control]").value,
+      help: node.querySelector("[name=help]").value,
+      placeholder: node.querySelector("[name=placeholder]").value,
+      options: node
+        .querySelector("[name=options]")
+        .value.split("\n")
+        .filter(Boolean),
+    })),
+  };
+}
+function formFields(form) {
+  return form.fields
+    .map((field) => {
+      const attrs = `name="${escape(field.name)}" aria-label="${escape(field.label)}" placeholder="${escape(field.placeholder)}"`;
+      const value =
+        field.name === "text" ? "I was charged twice for my subscription." : "";
+      const input =
+        field.control === "select"
+          ? `<select ${attrs}>${field.options.map((option) => `<option>${escape(option)}</option>`).join("")}</select>`
+          : field.control === "textarea"
+            ? `<textarea ${attrs} required>${escape(value)}</textarea>`
+            : `<input ${attrs} type="${escape(field.control)}" ${field.type === "number" ? 'step="any" required' : field.type === "string" ? `required value="${escape(value)}"` : ""}>`;
+      return `<label>${escape(field.label)}${input}${field.help ? `<small>${escape(field.help)}</small>` : ""}</label>`;
+    })
+    .join("");
+}
 function formsView() {
-  const pack = selectedPack().data;
-  return `<div class="grid"><section class="panel"><div class="panel-head"><h2>Formulaire généré</h2><span class="badge">${escape(pack.version)}</span></div><label>Politique<select id="pack-select">${packOptions()}</select></label><form id="decision-form">${Object.entries(
-    pack.inputs,
-  )
-    .map(
-      ([name, type]) =>
-        `<label>${escape(name)}${type === "string" ? `<textarea name="${escape(name)}" required placeholder="Saisissez les données à évaluer">${name === "text" ? "I was charged twice for my subscription." : ""}</textarea>` : `<input name="${escape(name)}" type="${type === "boolean" ? "checkbox" : "number"}" ${type === "number" ? 'step="any" required' : ""}>`}</label>`,
-    )
+  const draft = getFormDraft(),
+    entry = currentFormEntry(),
+    form = state.formPreview ?? entry.form;
+  return `<label>Politique<select id="pack-select">${packOptions()}</select></label><div class="grid"><section class="panel"><div class="panel-head"><h2>Construire le formulaire</h2><span class="badge">Révision ${draft.revision}</span></div>${entry.stale ? '<p class="error">La politique a changé. Vérifiez puis enregistrez ce formulaire avant de l’évaluer.</p>' : ""}<form id="layout-form"><label>Titre<input id="layout-title" maxlength="120" value="${escape(draft.layout.title)}"></label><label>Description<textarea id="layout-description" maxlength="1000">${escape(draft.layout.description)}</textarea></label>${draft.layout.fields
+    .map((field, index) => {
+      const type = selectedPack().data.inputs[field.name],
+        controls =
+          type === "string"
+            ? ["text", "textarea", "select"]
+            : type === "number"
+              ? ["number"]
+              : ["checkbox"];
+      return `<fieldset class="layout-field" data-name="${escape(field.name)}"><legend>${escape(field.name)} · ${escape(type)}</legend><label>Libellé<input name="label" maxlength="120" value="${escape(field.label)}"></label><label>Contrôle<select name="control" aria-label="Contrôle">${controls.map((control) => `<option ${control === field.control ? "selected" : ""}>${control}</option>`).join("")}</select></label><label>Indication<input name="placeholder" maxlength="200" value="${escape(field.placeholder)}"></label><label>Aide<input name="help" maxlength="500" value="${escape(field.help)}"></label><label>Options de liste · une par ligne<textarea name="options">${escape((field.options ?? []).join("\n"))}</textarea></label><div class="actions"><button type="button" data-action="move-field" data-index="${index}" data-direction="-1" ${index === 0 ? "disabled" : ""}>Monter</button><button type="button" data-action="move-field" data-index="${index}" data-direction="1" ${index === draft.layout.fields.length - 1 ? "disabled" : ""}>Descendre</button></div></fieldset>`;
+    })
     .join(
       "",
-    )}<button class="primary">Évaluer ce formulaire</button></form><div id="form-result"></div></section><section class="panel"><div class="panel-head"><h2>Contrat d’interface</h2></div><p>Les contrôles sont déduits des types d’entrée. Les résultats restent limités aux issues déclarées dans la politique.</p><div class="flow">${[...new Set([...pack.rules.map((r) => r.outcome), pack.fallback])].map((v) => `<span>${escape(v)}</span>`).join("")}</div><div class="actions"><button data-action="export-form">Exporter le formulaire HTML</button><button data-action="export-form-schema">Exporter le schéma UI</button></div><p>Le HTML autonome prépare un JSON à intégrer dans votre application. L’évaluation connectée fonctionne dans ce workspace, via son serveur authentifié.</p></section></div>`;
+    )}<div class="actions"><button type="button" data-action="preview-form">Actualiser l’aperçu</button><button type="submit" class="primary">Enregistrer le formulaire</button></div></form><p>Les types et les champs viennent de la politique. Vous personnalisez leur présentation sans modifier le contrat de décision.</p></section><div><section class="panel"><div class="panel-head"><h2>Formulaire généré</h2><span class="badge">${escape(form.pack.version)}</span></div><h3>${escape(form.title)}</h3><p>${escape(form.description)}</p><form id="decision-form">${formFields(form)}<button class="primary" ${entry.stale || state.formPreview ? "disabled" : ""}>Évaluer ce formulaire</button></form>${state.formPreview ? "<p>Enregistrez cet aperçu pour l’évaluer.</p>" : ""}<div id="form-result"></div></section><section class="panel"><h2>Exporter</h2><div class="actions"><button data-action="export-form">Exporter le formulaire HTML</button><button data-action="export-form-schema">Exporter le schéma UI</button></div><p>Les exports utilisent la dernière version enregistrée. Le HTML autonome prépare un JSON ; le serveur du workspace réalise l’évaluation connectée.</p></section></div></div>`;
 }
 const defaultRoutes = () =>
   Object.fromEntries(
@@ -415,7 +480,7 @@ const defaultRoutes = () =>
     ),
   );
 function agentsView() {
-  return `<div class="grid"><section class="panel"><div class="panel-head"><h2>Nouveau workflow JSON</h2><span class="badge">Validation humaine</span></div><form id="agent-form"><label>Politique<select id="pack-select">${packOptions()}</select></label><label>Identifiant de requête<input name="requestId" value="run_${crypto.randomUUID().slice(0, 8)}" required></label><label>État JSON<textarea name="state" class="editor">${escape(json({ text: "I was charged twice for my subscription." }))}</textarea></label><label>Routes autorisées<textarea name="routes" class="editor">${escape(json(defaultRoutes()))}</textarea></label><button class="primary">Créer le workflow</button></form><p>L’action fournie prépare une annotation locale ; elle n’écrit dans aucun système externe. Ajoutez une action serveur approuvée pour vos intégrations.</p></section><div>${list(
+  return `<div class="grid"><section class="panel"><div class="panel-head"><h2>Nouveau workflow JSON</h2><span class="badge">Validation humaine</span></div><form id="agent-form"><label>Politique<select id="pack-select">${packOptions()}</select></label><label>Identifiant de requête<input name="requestId" value="run_${crypto.randomUUID().slice(0, 8)}" required></label><label>État JSON<textarea name="state" class="editor">${escape(json({ text: "I was charged twice for my subscription." }))}</textarea></label><button type="button" data-action="two-step-route">Exemple à deux étapes</button><label>Routes autorisées<textarea name="routes" class="editor">${escape(json(defaultRoutes()))}</textarea></label><button class="primary">Créer le workflow</button></form><p>L’action fournie prépare une annotation locale ; elle n’écrit dans aucun système externe. Ajoutez une action serveur approuvée pour vos intégrations.</p></section><div>${list(
     "Exécutions",
     state.workspace.runs.map((r) =>
       listRow({
@@ -473,10 +538,61 @@ async function openRun(id) {
   const run = await api("run/" + id);
   detail(
     "Workflow · " + id,
-    `<span class="badge">${escape(statusName(run.data.status))}</span>${pretty(run.data)}<div class="actions">${run.data.status === "awaiting_review" ? `<button class="primary" data-action="approve-run" data-id="${id}" data-revision="${run.revision}">Approuver cette action</button><button data-action="reject-run" data-id="${id}" data-revision="${run.revision}">Refuser</button>` : ""}${run.data.capsule ? `<button data-action="replay-run" data-id="${id}">Rejouer hors ligne</button>` : ""}</div>`,
+    `<span class="badge">${escape(statusName(run.data.status))}</span>${run.data.routes?.[run.data.decision?.outcome]?.steps ? `<p>Étapes terminées : ${(run.data.steps ?? []).filter((step) => step.status === "completed").length} / ${run.data.routes[run.data.decision.outcome].steps.length}. Chaque action nécessite sa propre validation.</p>` : ""}${pretty(run.data)}<div class="actions">${run.data.status === "awaiting_review" ? `<button class="primary" data-action="approve-run" data-id="${id}" data-revision="${run.revision}">Approuver cette action</button><button data-action="reject-run" data-id="${id}" data-revision="${run.revision}">Refuser</button>` : ""}${run.data.capsule ? `<button data-action="replay-run" data-id="${id}">Rejouer hors ligne</button>` : ""}</div>`,
   );
 }
 const actions = {
+  "move-field": (button) => {
+    const draft = getFormDraft();
+    draft.layout = readLayout();
+    const index = Number(button.dataset.index),
+      next = index + Number(button.dataset.direction);
+    if (next >= 0 && next < draft.layout.fields.length)
+      [draft.layout.fields[index], draft.layout.fields[next]] = [
+        draft.layout.fields[next],
+        draft.layout.fields[index],
+      ];
+    render();
+  },
+  "preview-form": async () => {
+    const draft = getFormDraft();
+    draft.layout = readLayout();
+    state.formPreview = (
+      await api("form-preview", { packId: state.packId, layout: draft.layout })
+    ).form;
+    render();
+  },
+  "two-step-route": () => {
+    const form = $("#agent-form");
+    const routes = Object.fromEntries(
+      [
+        ...new Set([
+          ...selectedPack().data.rules.map((rule) => rule.outcome),
+          selectedPack().data.fallback,
+        ]),
+      ].map((outcome) => [
+        outcome,
+        {
+          steps: [
+            {
+              id: "prepare",
+              plugin: "annotation.prepare",
+              bindings: { queue: { value: outcome }, text: { state: "text" } },
+            },
+            {
+              id: "followup",
+              plugin: "annotation.prepare",
+              bindings: {
+                queue: { value: "followup" },
+                text: { step: "prepare", path: "/annotation/text" },
+              },
+            },
+          ],
+        },
+      ]),
+    );
+    form.querySelector("[name=routes]").value = json(routes);
+  },
   "new-pack": () =>
     detail(
       "Nouvelle politique",
@@ -690,6 +806,15 @@ document.addEventListener("submit", (event) => {
   if (button) button.disabled = true;
   run(async () => {
     const data = new FormData(form);
+    if (formId === "layout-form") {
+      const draft = getFormDraft();
+      draft.layout = readLayout();
+      await api("form-layout", { ...draft });
+      state.formDraft = null;
+      state.formPreview = null;
+      await refresh();
+      notice("Formulaire enregistré.", "success");
+    }
     if (formId === "login-form") {
       state.token = $("#token").value.trim();
       sessionStorage.setItem("workbench-token", state.token);
@@ -793,11 +918,12 @@ document.addEventListener("submit", (event) => {
               ? Number(data.get(key))
               : data.get(key);
       const result = await api("evaluate", {
+        formRevision: currentFormEntry().layout?.revision ?? 0,
         packId: state.packId,
         state: input,
       });
       $("#form-result").innerHTML =
-        `<div class="inline-result">Décision : <strong>${escape(result.data.record.outcome)}</strong></div>${pretty(result.data.record)}`;
+        `<div class="inline-result">Décision : <strong>${escape(result.data.record.outcome)}</strong></div><details><summary>Détails de la décision</summary>${pretty(result.data.record)}</details>`;
     }
     if (formId === "review-form") {
       state.job = await api("review", {

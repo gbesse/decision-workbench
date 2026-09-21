@@ -1,0 +1,102 @@
+{
+  "description": "Dated GitHub repository metadata for a deliberately selected LLM tooling comparison; not a market ranking or historical star series.",
+  "observedAt": "2026-09-21T11:55:31.871562+00:00",
+  "repositories": [
+    {
+      "nameWithOwner": "langchain-ai/langchain",
+      "url": "https://github.com/langchain-ai/langchain",
+      "createdAt": "2022-10-17T02:58:36Z",
+      "stargazerCount": 146784,
+      "forkCount": 24546,
+      "isArchived": false,
+      "licenseInfo": {
+        "spdxId": "MIT"
+      },
+      "pushedAt": "2026-09-21T08:56:46Z"
+    },
+    {
+      "nameWithOwner": "run-llama/llama_index",
+      "url": "https://github.com/run-llama/llama_index",
+      "createdAt": "2022-11-02T04:24:54Z",
+      "stargazerCount": 52258,
+      "forkCount": 8183,
+      "isArchived": false,
+      "licenseInfo": {
+        "spdxId": "MIT"
+      },
+      "pushedAt": "2026-09-19T04:27:01Z"
+    },
+    {
+      "nameWithOwner": "FlowiseAI/Flowise",
+      "url": "https://github.com/FlowiseAI/Flowise",
+      "createdAt": "2023-03-31T12:23:09Z",
+      "stargazerCount": 55471,
+      "forkCount": 25034,
+      "isArchived": true,
+      "licenseInfo": {
+        "spdxId": "NOASSERTION"
+      },
+      "pushedAt": "2026-08-13T12:38:19Z"
+    },
+    {
+      "nameWithOwner": "langflow-ai/langflow",
+      "url": "https://github.com/langflow-ai/langflow",
+      "createdAt": "2023-02-08T22:28:03Z",
+      "stargazerCount": 155085,
+      "forkCount": 10123,
+      "isArchived": false,
+      "licenseInfo": {
+        "spdxId": "MIT"
+      },
+      "pushedAt": "2026-09-21T07:26:04Z"
+    },
+    {
+      "nameWithOwner": "langgenius/dify",
+      "url": "https://github.com/langgenius/dify",
+      "createdAt": "2023-04-12T07:40:24Z",
+      "stargazerCount": 156713,
+      "forkCount": 24711,
+      "isArchived": false,
+      "licenseInfo": {
+        "spdxId": "NOASSERTION"
+      },
+      "pushedAt": "2026-09-21T11:53:14Z"
+    },
+    {
+      "nameWithOwner": "Significant-Gravitas/AutoGPT",
+      "url": "https://github.com/Significant-Gravitas/AutoGPT",
+      "createdAt": "2023-03-16T09:21:07Z",
+      "stargazerCount": 187472,
+      "forkCount": 46007,
+      "isArchived": false,
+      "licenseInfo": {
+        "spdxId": "NOASSERTION"
+      },
+      "pushedAt": "2026-09-21T11:49:15Z"
+    },
+    {
+      "nameWithOwner": "open-webui/open-webui",
+      "url": "https://github.com/open-webui/open-webui",
+      "createdAt": "2023-10-06T22:08:27Z",
+      "stargazerCount": 152691,
+      "forkCount": 22342,
+      "isArchived": false,
+      "licenseInfo": {
+        "spdxId": "NOASSERTION"
+      },
+      "pushedAt": "2026-09-21T05:00:08Z"
+    },
+    {
+      "nameWithOwner": "crewAIInc/crewAI",
+      "url": "https://github.com/crewAIInc/crewAI",
+      "createdAt": "2023-10-27T03:26:59Z",
+      "stargazerCount": 58853,
+      "forkCount": 8527,
+      "isArchived": false,
+      "licenseInfo": {
+        "spdxId": "MIT"
+      },
+      "pushedAt": "2026-09-21T10:58:23Z"
+    }
+  ]
+}

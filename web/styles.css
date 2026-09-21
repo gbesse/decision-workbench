@@ -783,3 +783,18 @@ dialog::backdrop {
 .actions {
   margin-bottom: 14px;
 }
+/* Purpose: Keep form-field configuration groups readable and keyboard-accessible. */
+.layout-field {
+  border: 1px solid var(--border, #d7e1e6);
+  border-radius: 10px;
+  margin: 20px 0;
+  padding: 16px;
+  min-width: 0;
+}
+.layout-field legend {
+  font-weight: 600;
+  padding: 0 8px;
+}
+.layout-field textarea {
+  min-height: 70px;
+}

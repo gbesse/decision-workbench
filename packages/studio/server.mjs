@@ -82,6 +82,21 @@ export async function createWorkbench({
     store.event("error", { name: error.name, message: error.message });
     onError(error);
   };
+  const formFor = (pack, strict = false) => {
+    const saved = store.get("form-layout", pack.id);
+    const stale = Boolean(
+      saved && saved.data.packFingerprint !== fingerprint(pack.data),
+    );
+    if (strict && stale)
+      throw new Conflict(
+        "The policy changed. Review and save the form layout before evaluation.",
+      );
+    return {
+      form: compileForm(pack.data, saved && !stale ? saved.data.layout : {}),
+      layout: saved,
+      stale,
+    };
+  };
   const requireObject = (kind, id) => {
     const result = store.get(kind, id);
     if (!result) throw new HttpError(404, `Unknown ${kind}`);
@@ -267,6 +282,9 @@ export async function createWorkbench({
         send(200, {
           mode,
           packs: store.list("pack"),
+          forms: store
+            .list("pack")
+            .map((pack) => ({ packId: pack.id, ...formFor(pack) })),
           documents: store.list("document").map((d) => ({
             id: d.id,
             revision: d.revision,
@@ -362,7 +380,18 @@ export async function createWorkbench({
       if (req.method === "POST" && path === "/api/evaluate") {
         providerReady();
         const pack = requireObject("pack", body.packId);
-        const state = validateForm(compileForm(pack.data), body.state);
+        const state = validateForm(
+          body.formRevision === undefined
+            ? compileForm(pack.data)
+            : formFor(pack, true).form,
+          body.state,
+        );
+        if (
+          body.formRevision !== undefined &&
+          (store.get("form-layout", pack.id)?.revision ?? 0) !==
+            body.formRevision
+        )
+          throw new Conflict("Form layout changed. Reload before evaluating.");
         const decision = await evaluate(pack.data, state, {
           provider: actualProvider,
           timeoutMs,
@@ -445,9 +474,35 @@ export async function createWorkbench({
         );
         return;
       }
+      if (req.method === "POST" && path === "/api/form-layout") {
+        const pack = requireObject("pack", body.packId);
+        if (body.packRevision !== pack.revision)
+          throw new Conflict("Policy changed. Reload before saving the form.");
+        const form = compileForm(pack.data, body.layout);
+        const saved = store.put(
+          "form-layout",
+          pack.id,
+          {
+            layout: {
+              title: form.title,
+              description: form.description,
+              fields: form.fields,
+            },
+            packFingerprint: fingerprint(pack.data),
+          },
+          body.revision ?? 0,
+        );
+        send(200, saved);
+        return;
+      }
+      if (req.method === "POST" && path === "/api/form-preview") {
+        const pack = requireObject("pack", body.packId);
+        send(200, { form: compileForm(pack.data, body.layout) });
+        return;
+      }
       if (req.method === "POST" && path === "/api/form") {
-        const form = compileForm(requireObject("pack", body.packId).data);
-        send(200, { form, html: exportHtml(form) });
+        const result = formFor(requireObject("pack", body.packId), true);
+        send(200, { ...result, html: exportHtml(result.form) });
         return;
       }
       if (req.method === "POST" && path === "/api/experiment") {

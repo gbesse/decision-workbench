@@ -276,3 +276,79 @@ test("a non-responsive provider cannot hold an evaluation beyond its configured 
   assert.ok(result.body.error);
   assert.equal(errors.length, 1);
 });
+
+test("saved form contracts reject stale writes, unlisted selections and policy drift", async (t) => {
+  const { app, call } = await host(t),
+    pack = app.store.get("pack", "support-triage");
+  const layout = {
+    title: "Support form",
+    fields: [
+      {
+        name: "text",
+        label: "Request",
+        control: "select",
+        options: ["Refund invoice", "API crashes"],
+      },
+    ],
+  };
+  const saved = await call("form-layout", {
+    packId: pack.id,
+    packRevision: pack.revision,
+    revision: 0,
+    layout,
+  });
+  assert.equal(saved.status, 200);
+  assert.equal(
+    (
+      await call("form-layout", {
+        packId: pack.id,
+        packRevision: pack.revision,
+        revision: 0,
+        layout,
+      })
+    ).status,
+    409,
+  );
+  assert.equal(
+    (await call("form", { packId: pack.id })).body.form.fields[0].control,
+    "select",
+  );
+  assert.equal(
+    (
+      await call("evaluate", {
+        packId: pack.id,
+        formRevision: saved.body.revision,
+        state: { text: "Not in list" },
+      })
+    ).status,
+    400,
+  );
+  assert.equal(
+    (
+      await call("evaluate", {
+        packId: pack.id,
+        formRevision: saved.body.revision,
+        state: { text: "Refund invoice" },
+      })
+    ).status,
+    200,
+  );
+  const updated = { ...pack.data, version: "0.2.0" };
+  await call("pack", { id: pack.id, revision: pack.revision, pack: updated });
+  assert.equal(
+    (
+      await call("evaluate", {
+        packId: pack.id,
+        formRevision: saved.body.revision,
+        state: { text: "Refund invoice" },
+      })
+    ).status,
+    409,
+  );
+  assert.equal(
+    (await call("workspace")).body.forms.find((f) => f.packId === pack.id)
+      .stale,
+    true,
+  );
+  assert.equal((await call("form", { packId: pack.id })).status, 409);
+});

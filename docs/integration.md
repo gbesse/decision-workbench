@@ -14,7 +14,7 @@ The package lock fixes the transitive dependency graph. No copied fork of these 
 
 ## Importable modules
 
-Install with `npm install --ignore-scripts github:gbesse/decision-workbench#v0.1.0`.
+Install with `npm install --ignore-scripts github:gbesse/decision-workbench#v0.2.0`.
 
 | Import                                   | Exports                                     |
 | ---------------------------------------- | ------------------------------------------- |

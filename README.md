@@ -9,7 +9,7 @@ Import a spreadsheet or document, map its fields, try a decision policy, inspect
 
 ![The decision studio with a completed synthetic batch](docs/workbench-studio.png)
 
-**v0.1.0 alpha · Node.js 24+ · MIT · independent of TypeSafe.** Browser UI: French. Code and integration documentation: English. Jev inference is a separate TypeSafe service; this project does not redistribute model weights.
+**v0.2.0 alpha · Node.js 24+ · MIT · independent of TypeSafe.** Browser UI: French. Code and integration documentation: English. Jev inference is a separate TypeSafe service; this project does not redistribute model weights.
 
 ## Run in three minutes
 
@@ -33,13 +33,13 @@ For real inference, set `TYPESAFE_API_KEY` in the server environment and run `np
 | **Decision Studio**     | Create, edit and version policies; compare question candidates on development and held-out examples                                      | DecisionPacks JSON, experiment records                   |
 | **StateBridge**         | Import CSV, JSON, text, HTML, simple email and text PDFs; inspect source references; map typed fields                                    | Source records, mapped state and evidence                |
 | **Decision Sheets**     | Evaluate rows within a call budget; retain per-row errors; record human corrections; compare decision rules offline                      | CSV and complete JSON run                                |
-| **Decision UI Builder** | Derive primitive fields and finite outcomes from a policy; evaluate forms in the workspace                                               | Portable UI contract and standalone HTML input collector |
-| **JSON Agent Server**   | One policy decision → one approved action; durable execution state, stable request IDs and offline trace replay                          | Authenticated JSON API; optional webhook action          |
+| **Decision UI Builder** | Visually edit labels, controls, order, help and select options; save and evaluate versioned layouts                                      | Portable UI contract and standalone HTML input collector |
+| **JSON Agent Server**   | One policy decision → 1–10 individually reviewed actions, prior-result bindings, durable execution and replay                            | Authenticated JSON API; optional webhook action          |
 | **Decision Plugins**    | Register trusted local extractors, transforms and actions with versioned JSON contracts, approved entrypoint hashes and worker deadlines | Local plugin configuration and catalogue                 |
 
 This is one coherent application, with reusable module exports. It is not six disconnected demo repositories.
 
-The simple Studio editor targets a Choice question over `text`. The complete JSON editor supports the broader DecisionPacks contract. HTML exports prepare input JSON; connected inference belongs on your server. The agent is a bounded decision-and-action workflow, not an autonomous general-purpose planner.
+The simple Studio editor targets a Choice question over `text`. The complete JSON editor supports the broader DecisionPacks contract. HTML exports prepare input JSON; connected inference belongs on your server. The agent supports bounded sequential actions, each separately approved; it is not an autonomous general-purpose planner.
 
 ## Extend existing projects
 
@@ -65,7 +65,7 @@ const { state, evidence } = mapState(source, "1", {
 });
 ```
 
-For use as a dependency, install the GitHub tag: `npm install --ignore-scripts github:gbesse/decision-workbench#v0.1.0`. No npm registry publication is required.
+For use as a dependency, install the GitHub tag: `npm install --ignore-scripts github:gbesse/decision-workbench#v0.2.0`. No npm registry publication is required.
 
 ## Plugins that run
 
@@ -95,12 +95,14 @@ npm run test:browser
 
 The optional `npm run test:live` loads `TYPESAFE_API_KEY` from the environment or the ignored `.local/jev.env` file. It sends at most six real provider requests using fictional fixtures, performs no external action writes, and is never run automatically by CI. To start the real local UI with that file, use `node --env-file=.local/jev.env scripts/start.mjs` without `--demo`.
 
-There is no build step. Tests cover module behavior, real local HTTP and webhook exchanges, PDF text extraction, state conflicts, failure reporting, and four Chromium user journeys. [Verification details](docs/verification.md).
+There is no build step. Tests cover module behavior, real local HTTP and webhook exchanges, PDF text extraction, state conflicts, failure reporting, and six Chromium user journeys. [Verification details](docs/verification.md).
 
 This alpha is for a **single operator on localhost**. It has no team accounts, hosted deployment, OCR, plugin marketplace or automatic agent retries. Keep an exported copy of important policies and follow the [operations guide](docs/architecture.md) for interrupted runs and backup. [Security model](SECURITY.md).
 
 ## Documentation
 
+- [Editable forms and multi-step workflows](docs/forms-and-sequences.md)
+- [Historical LLM tooling study and product priorities — French](docs/research/launch-patterns.md)
 - [JSON API](docs/api.md)
 - [Plugins and reviewed webhooks](docs/plugins.md)
 - [Architecture, persistence and recovery](docs/architecture.md)

@@ -34,7 +34,7 @@ npm start -- --demo --plugins .local/webhook-config.json
 
 Use an HTTPS endpoint you control; loopback HTTP is accepted for development. In **JSON Agents**, change an action route's plugin to `example.webhook`. Keep its `queue` literal and `text` state bindings. Creating the workflow only evaluates the policy. **Approving it performs a real HTTP write, even in demo mode**: demo substitutes inference, not action plugins.
 
-The request is POST JSON `{queue, text}`, with `Idempotency-Key` equal to the durable run ID and optional `Authorization: Bearer …` from the server environment. Redirects are rejected and the request has a ten-second deadline. Non-2xx responses fail visibly. The receiver must deduplicate idempotency keys; a client timeout cannot prove the receiver did nothing.
+The request is POST JSON `{queue, text}`, with `Idempotency-Key` equal to the durable run ID for single-action routes, or `<runId>:<stepId>` for multi-step routes and optional `Authorization: Bearer …` from the server environment. Redirects are rejected and the request has a ten-second deadline. Non-2xx responses fail visibly. The receiver must deduplicate idempotency keys; a client timeout cannot prove the receiver did nothing.
 
 Action plugins are unavailable through `/api/plugins/execute`. They run only after a reviewed agent claim. Their results are recorded with Agent Capsule. Replay consumes those recordings without invoking the webhook. Failures and crashes become uncertain states and do not trigger automatic retries.
 

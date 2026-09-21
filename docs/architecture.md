@@ -50,7 +50,7 @@ A `.lock` file adjacent to the database prevents another server from owning it. 
 
 On restart, unfinished jobs and evaluations become `interrupted`; actions claimed as `executing` become `uncertain`. Nothing automatically repeats an external action. Inspect the remote system and saved trace before issuing a new request. The webhook example sends a stable idempotency key, but the receiver must implement deduplication. This is not an exactly-once delivery guarantee.
 
-Cancellation aborts remaining batch work and keeps saved rows. Approved action replay uses its capsule and does not invoke plugins again. A failed action can be marked uncertain even when the failure happened before a side effect; that conservative status requires inspection.
+Cancellation aborts remaining batch work and keeps saved rows. Approved action replay uses its per-step capsules and does not invoke plugins again. Routes can contain up to ten actions, each separately approved; see [forms and sequences](forms-and-sequences.md). A failed action can be marked uncertain even when the failure happened before a side effect; that conservative status requires inspection.
 
 ## Errors and embedding
 

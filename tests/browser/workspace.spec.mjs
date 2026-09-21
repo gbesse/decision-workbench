@@ -1,5 +1,6 @@
 // Purpose: Verify real user workflows across all six UI modules and capture shareable synthetic screenshots.
 import { test, expect } from "@playwright/test";
+import { readFile } from "node:fs/promises";
 const open = async (page) => {
   await page.goto("/#token=browser-fixture-operator-token-24-plus");
   await expect(
@@ -120,4 +121,89 @@ test("policy authoring and question comparison are available without a SDK", asy
   await page.getByRole("button", { name: "Lancer la comparaison" }).click();
   await expect(page.getByRole("dialog")).toContainText("heldout");
   await expect(page.getByRole("dialog")).toContainText("selectedCandidate");
+});
+
+test("visual form customization persists and is reflected in evaluation and HTML export", async ({
+  page,
+}) => {
+  await open(page);
+  await page.getByRole("button", { name: "UI Builder", exact: true }).click();
+  await page.getByLabel("Titre", { exact: true }).fill("Assistance client");
+  await page.getByLabel("Libellé", { exact: true }).fill("Votre demande");
+  await page.getByLabel("Contrôle", { exact: true }).selectOption("select");
+  await page
+    .getByLabel("Options de liste · une par ligne")
+    .fill("Refund invoice\nAPI crashes");
+  await page.getByRole("button", { name: "Actualiser l’aperçu" }).click();
+  await expect(page.getByLabel("Votre demande", { exact: true })).toHaveValue(
+    "Refund invoice",
+  );
+  await expect(
+    page.getByRole("button", { name: "Évaluer ce formulaire" }),
+  ).toBeDisabled();
+  await page.getByRole("button", { name: "Enregistrer le formulaire" }).click();
+  await expect(
+    page.getByRole("button", { name: "Évaluer ce formulaire" }),
+  ).toBeEnabled();
+  await page.reload();
+  await page.getByRole("button", { name: "UI Builder", exact: true }).click();
+  await expect(page.getByLabel("Votre demande", { exact: true })).toHaveValue(
+    "Refund invoice",
+  );
+  await page.getByRole("button", { name: "Évaluer ce formulaire" }).click();
+  await expect(page.locator("#form-result")).toContainText("billing");
+  const downloadPromise = page.waitForEvent("download");
+  await page
+    .getByRole("button", { name: "Exporter le formulaire HTML" })
+    .click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toBe("decision-form.html");
+  const exported = await page.context().newPage();
+  try {
+    await exported.setContent(await readFile(await download.path(), "utf8"));
+    await exported
+      .getByLabel("Votre demande", { exact: true })
+      .selectOption("API crashes");
+    await exported.getByRole("button", { name: "Prepare JSON" }).click();
+    await expect(exported.locator("#result")).toContainText(
+      '"text": "API crashes"',
+    );
+  } finally {
+    await exported.close();
+  }
+  if (await page.getByRole("button", { name: "Fermer le message" }).isVisible())
+    await page.getByRole("button", { name: "Fermer le message" }).click();
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.screenshot({
+    path: "docs/workbench-form-builder.png",
+    fullPage: true,
+  });
+});
+
+test("two-step workflow pauses between actions and replays both recorded results", async ({
+  page,
+}) => {
+  await open(page);
+  await page.getByRole("button", { name: "JSON Agents", exact: true }).click();
+  await page.getByRole("button", { name: "Exemple à deux étapes" }).click();
+  await page.getByRole("button", { name: "Créer le workflow" }).click();
+  await expect(page.getByRole("dialog")).toContainText(
+    "Étapes terminées : 0 / 2",
+  );
+  await page.getByRole("button", { name: "Approuver cette action" }).click();
+  await expect(page.getByRole("dialog")).toContainText(
+    "Étapes terminées : 1 / 2",
+  );
+  await expect(
+    page.getByRole("button", { name: "Approuver cette action" }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Approuver cette action" }).click();
+  await expect(page.getByRole("dialog")).toContainText(
+    "Étapes terminées : 2 / 2",
+  );
+  await expect(
+    page.getByRole("button", { name: "Approuver cette action" }),
+  ).not.toBeVisible();
+  await page.getByRole("button", { name: "Rejouer hors ligne" }).click();
+  await expect(page.getByRole("dialog")).toContainText('"consumedEvents": 2');
 });

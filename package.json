@@ -1,6 +1,6 @@
 {
   "name": "@gbesse/decision-workbench",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Visual decision studio, data bridge, JSON agent server, UI builder, decision sheets and worker plugins for Jev.",
   "type": "module",
   "license": "MIT",

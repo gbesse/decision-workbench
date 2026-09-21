@@ -8,7 +8,7 @@ The repository uses Node's test runner and Chromium through Playwright. CI runs 
 - A local HTTP receiver verifies the real optional webhook: no call before approval, stable idempotency header, one delivery, and no second delivery during capsule replay.
 - HTTP tests cover authentication, browser-origin checks, CSP, import-to-review flows, immutable semantic versions, Question Forge wiring, explicit provider failures, non-responsive provider deadlines, and reporting of uncertain actions.
 - A generated valid PDF fixture exercises text extraction through the actual PDF plugin worker.
-- Four Chromium journeys cover source import, mapping, batch evaluation, correction, CSV download, plugin execution, generated forms, reviewed agent actions, mobile upload and source inspection, policy creation, and question comparison.
+- Six Chromium journeys cover source import, mapping, batch evaluation, correction, CSV download, plugin execution, generated forms, reviewed agent actions, mobile upload and source inspection, policy creation, question comparison, persistent visual form editing and separately approved two-step workflows.
 - `npm run check` checks maintained JavaScript syntax. `npm run typecheck` checks the UI compiler's JSDoc types only. `npm run format:check` verifies source formatting.
 - `npm run demo` composes all six modules using the explicit synthetic provider.
 
@@ -33,3 +33,11 @@ Only fictional support requests were sent. No external action write was performe
 `npm run test:live` is deliberately absent from the default test command and CI. It loads `.local/jev.env` when present or uses `TYPESAFE_API_KEY` from the environment. Each invocation can consume up to six billable provider calls and exits on failure; re-running it is a new budget.
 
 This is a small live integration check, not an accuracy benchmark or load test. Production workloads, a remote webhook service, multiuser deployment and the cross-addon integration suite remain untested. The original v0.1.0 release was published before this live verification; its historical release notes reflect that earlier scope.
+
+## v0.2.0 extension checks
+
+Additional tests cover layout ordering, typed controls, select constraints, stale layout revisions and policy drift; independently approved two-step workflows; previous-result bindings; restart between actions; plugin pin changes; failed later steps retaining the completed prefix; and pre-v0.2 request identity compatibility. Browser checks exercise layout persistence, evaluation and export, and two successive action approvals with a two-event replay.
+
+The optional live check was extended to save and evaluate a customized form and approve two local-only actions. It passed on 2026-09-21 with six real `jev-1.13.0` requests total for that invocation, no extra provider calls during replay and no external action writes. This is in addition to the earlier seven-request verification, not an assertion that no further calls were used.
+
+`workbench-form-builder.png` shows the visual editor using fictional sample data. The research JSON files in `docs/research` contain public GitHub metadata and pinned early README references; they contain no workspace records or credentials.

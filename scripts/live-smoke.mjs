@@ -54,7 +54,24 @@ try {
   const pack = workspace.packs.find((p) => p.id === packId).data;
   const form = await call("form", { packId });
   assert.equal(form.form.fields[0].name, "text");
+  const savedForm = await call("form-layout", {
+    packId,
+    packRevision: workspace.packs.find((p) => p.id === packId).revision,
+    revision: 0,
+    layout: {
+      title: "Live custom form",
+      fields: [
+        {
+          name: "text",
+          label: "Request",
+          control: "select",
+          options: ["Please refund this duplicate invoice."],
+        },
+      ],
+    },
+  });
   const evaluated = await call("evaluate", {
+    formRevision: savedForm.revision,
     packId,
     state: { text: "Please refund this duplicate invoice." },
   });
@@ -109,8 +126,21 @@ try {
     form.form.outcomes.map((outcome) => [
       outcome,
       {
-        plugin: "annotation.prepare",
-        bindings: { queue: { value: outcome }, text: { state: "text" } },
+        steps: [
+          {
+            id: "prepare",
+            plugin: "annotation.prepare",
+            bindings: { queue: { value: outcome }, text: { state: "text" } },
+          },
+          {
+            id: "followup",
+            plugin: "annotation.prepare",
+            bindings: {
+              queue: { value: "followup" },
+              text: { step: "prepare", path: "/annotation/text" },
+            },
+          },
+        ],
       },
     ]),
   );
@@ -121,11 +151,17 @@ try {
     routes,
   });
   assert.equal(run.data.status, "awaiting_review");
-  const completed = await call("runs/approve", {
+  const first = await call("runs/approve", {
     id: run.id,
     revision: run.revision,
   });
+  assert.equal(first.data.status, "awaiting_review");
+  const completed = await call("runs/approve", {
+    id: run.id,
+    revision: first.revision,
+  });
   assert.equal(completed.data.status, "completed");
+  assert.equal(completed.data.steps.length, 2);
   assert.equal(completed.data.result.execution, "local_result_only");
   const beforeActionReplay = calls;
   assert.equal((await call("runs/replay", { id: run.id })).reproduced, true);
@@ -172,6 +208,8 @@ try {
         live: true,
         model: pack.model,
         providerCalls: calls,
+        customizedForm: true,
+        actionSteps: completed.data.steps.length,
         formOutcome: evaluated.data.record.outcome,
         batchOutcomes: job.data.results.map((row) => row.record.outcome),
         agentOutcome: run.data.decision.outcome,

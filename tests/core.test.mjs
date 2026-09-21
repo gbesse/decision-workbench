@@ -343,3 +343,218 @@ test("approved webhook action posts to a real loopback server with the run ident
   await agent.replay(run.id);
   assert.equal(requests, 1);
 });
+
+test("form layouts reorder fields, preserve types and enforce enumerated choices", () => {
+  const pack = {
+    ...examplePack,
+    inputs: { text: "string", quantity: "number" },
+  };
+  const form = compileForm(pack, {
+    title: "Order review",
+    fields: [
+      { name: "quantity", label: "Seats", control: "number" },
+      {
+        name: "text",
+        label: "Request",
+        control: "select",
+        options: ["Refund", "New order"],
+        help: "Select a request",
+      },
+    ],
+  });
+  assert.equal(form.fields[0].name, "quantity");
+  assert.deepEqual(validateForm(form, { quantity: 3, text: "Refund" }), {
+    quantity: 3,
+    text: "Refund",
+  });
+  assert.throws(
+    () => validateForm(form, { quantity: 3, text: "Unlisted" }),
+    /declared option/,
+  );
+  assert.throws(
+    () => compileForm(pack, { fields: [{ name: "text" }, { name: "text" }] }),
+    /exactly once/,
+  );
+  assert.throws(
+    () =>
+      compileForm(pack, {
+        fields: [{ name: "text" }, { name: "quantity", control: "textarea" }],
+      }),
+    /incompatible/,
+  );
+  assert.match(exportHtml(form), /<select/);
+  assert.match(exportHtml(form), /Order review/);
+});
+
+test("multi-step actions require separate approvals and resolve prior results after reopening storage", async (t) => {
+  const path = join(await temporary(t), "sequence.sqlite");
+  let store = new Store(path);
+  const registry = await createRegistry();
+  let calls = 0;
+  const provider = async (request) => {
+    calls++;
+    return syntheticProvider(request);
+  };
+  let agent = new AgentServer({ store, registry, provider });
+  const input = {
+    requestId: "sequence",
+    pack: examplePack,
+    state: { text: "Refund invoice" },
+    routes: {
+      billing: {
+        steps: [
+          {
+            id: "first",
+            plugin: "annotation.prepare",
+            bindings: { queue: { value: "billing" }, text: { state: "text" } },
+          },
+          {
+            id: "second",
+            plugin: "annotation.prepare",
+            bindings: {
+              queue: { value: "followup" },
+              text: { step: "first", path: "/annotation/text" },
+            },
+          },
+        ],
+      },
+    },
+  };
+  const initial = await agent.start(input);
+  assert.equal(initial.data.steps.length, 0);
+  const first = await agent.approve(initial.id, initial.revision);
+  assert.equal(first.data.status, "awaiting_review");
+  assert.equal(first.data.steps.length, 1);
+  await assert.rejects(
+    () => agent.approve(initial.id, initial.revision),
+    Conflict,
+  );
+  store.close();
+  store = new Store(path);
+  t.after(() => store.close());
+  store.recover();
+  agent = new AgentServer({ store, registry, provider });
+  assert.equal((await agent.start(input)).revision, first.revision);
+  const second = await agent.approve(first.id, first.revision);
+  assert.equal(second.data.status, "completed");
+  assert.equal(second.data.steps.length, 2);
+  assert.equal(second.data.result.annotation.text, "Refund invoice");
+  const replay = await agent.replay(second.id);
+  assert.equal(replay.reproduced, true);
+  assert.equal(replay.consumedEvents, 2);
+  assert.equal(calls, 1);
+});
+
+test("invalid sequence references fail before inference and an action pin change blocks approval", async (t) => {
+  const store = new Store();
+  t.after(() => store.close());
+  const registry = await createRegistry();
+  let calls = 0;
+  const agent = new AgentServer({
+    store,
+    registry,
+    provider: async (request) => {
+      calls++;
+      return syntheticProvider(request);
+    },
+  });
+  const input = {
+    requestId: "pin-check",
+    pack: examplePack,
+    state: { text: "Refund" },
+    routes: {
+      billing: {
+        steps: [
+          {
+            id: "first",
+            plugin: "annotation.prepare",
+            bindings: {
+              queue: { value: "billing" },
+              text: { step: "later", path: "/text" },
+            },
+          },
+        ],
+      },
+    },
+  };
+  await assert.rejects(() => agent.start(input), /earlier step/);
+  assert.equal(calls, 0);
+  input.routes.billing.steps[0].bindings.text = { state: "text" };
+  const run = await agent.start(input);
+  registry.plugins.get("annotation.prepare").digest = "changed";
+  await assert.rejects(
+    () => agent.approve(run.id, run.revision),
+    /plugin changed/,
+  );
+  assert.equal(store.get("run", run.id).data.status, "awaiting_review");
+});
+
+test("a failed second step preserves the successful prefix and cannot be approved again", async (t) => {
+  const store = new Store();
+  t.after(() => store.close());
+  const registry = await createRegistry(),
+    agent = new AgentServer({ store, registry, provider: syntheticProvider });
+  const run = await agent.start({
+    requestId: "failed-second",
+    pack: examplePack,
+    state: { text: "Refund" },
+    routes: {
+      billing: {
+        steps: [
+          {
+            id: "first",
+            plugin: "annotation.prepare",
+            bindings: { queue: { value: "ok" }, text: { state: "text" } },
+          },
+          {
+            id: "second",
+            plugin: "annotation.prepare",
+            bindings: { queue: { value: 42 }, text: { state: "text" } },
+          },
+        ],
+      },
+    },
+  });
+  const first = await agent.approve(run.id, run.revision),
+    failed = await agent.approve(run.id, first.revision);
+  assert.equal(failed.data.status, "uncertain");
+  assert.equal(failed.data.steps[0].status, "completed");
+  assert.equal(failed.data.steps[1].status, "uncertain");
+  await assert.rejects(
+    () => agent.approve(run.id, failed.revision),
+    /not awaiting/,
+  );
+  assert.equal((await agent.replay(run.id)).reproduced, true);
+});
+
+test("legacy persisted single-action request identities remain readable after sequence support", async (t) => {
+  const { fingerprint } = await import("@gbesse/decisionpacks");
+  const store = new Store();
+  t.after(() => store.close());
+  const registry = await createRegistry();
+  const input = {
+    requestId: "legacy",
+    pack: examplePack,
+    state: { text: "Refund" },
+    routes: {
+      billing: {
+        plugin: "annotation.prepare",
+        bindings: { queue: { value: "billing" }, text: { state: "text" } },
+      },
+    },
+  };
+  const { requestId, ...request } = input;
+  store.put("run", requestId, {
+    ...request,
+    status: "completed",
+    requestFingerprint: fingerprint(request),
+  });
+  const agent = new AgentServer({
+    store,
+    registry,
+    provider: () => {
+      throw Error("Existing requests must not call provider");
+    },
+  });
+  assert.equal((await agent.start(input)).data.status, "completed");
+});
