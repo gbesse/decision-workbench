@@ -207,3 +207,45 @@ test("two-step workflow pauses between actions and replays both recorded results
   await page.getByRole("button", { name: "Rejouer hors ligne" }).click();
   await expect(page.getByRole("dialog")).toContainText('"consumedEvents": 2');
 });
+
+test("Decision Review creates a dataset from an imported trace and exports a human label", async ({
+  page,
+  request,
+}) => {
+  await open(page);
+  const response = await request.post("/api/evaluate", {
+    headers: { authorization: "Bearer browser-fixture-operator-token-24-plus" },
+    data: { packId: "support-triage", state: { text: "charged twice" } },
+  });
+  const decision = await response.json();
+  const example = await (
+    await request.get("/api/example", {
+      headers: {
+        authorization: "Bearer browser-fixture-operator-token-24-plus",
+      },
+    })
+  ).json();
+  await page.getByRole("link", { name: "Decision Review" }).click();
+  await page.locator("#trace").setInputFiles({
+    name: "block-trace.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(
+      JSON.stringify({
+        schemaVersion: 1,
+        pack: example.pack,
+        rows: [{ state: decision.data.state, record: decision.data.record }],
+      }),
+    ),
+  });
+  await expect(page.getByText("Modèle :")).toBeVisible();
+  await page.getByLabel("Votre nom").fill("Alice");
+  await page.getByLabel("Motif", { exact: true }).fill("Invoice verified");
+  await page.getByRole("button", { name: "Enregistrer mon avis" }).click();
+  await expect(page.getByText("Historique des avis (1)")).toBeVisible();
+  await page.getByLabel("Inclure dans l’export").check();
+  const download = page.waitForEvent("download");
+  await page
+    .getByRole("button", { name: "Exporter les cas sélectionnés" })
+    .click();
+  expect((await download).suggestedFilename()).toBe("decision-dataset.json");
+});

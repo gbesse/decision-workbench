@@ -20,6 +20,12 @@ import { mapState } from "../statebridge/index.mjs";
 import { evaluateRows, exportCsv } from "../sheets/index.mjs";
 import { compileForm, validateForm, exportHtml } from "../ui/index.mjs";
 import { AgentServer } from "../agent/index.mjs";
+import {
+  createReviewSet,
+  vote,
+  resolve,
+  exportDataset,
+} from "../review/index.mjs";
 class HttpError extends Error {
   constructor(status, message) {
     super(message);
@@ -226,6 +232,8 @@ export async function createWorkbench({
         const assets = {
           "/": "index.html",
           "/app.js": "app.js",
+          "/review": "review.html",
+          "/review.js": "review.js",
           "/styles.css": "styles.css",
         };
         const file = assets[path];
@@ -308,6 +316,69 @@ export async function createWorkbench({
           plugins: registry.list(),
           experiments: store.list("experiment").slice(0, 10),
         });
+        return;
+      }
+      if (req.method === "GET" && path === "/api/review-sets") {
+        send(200, store.list("review-set"));
+        return;
+      }
+      if (req.method === "POST" && path === "/api/review-sets") {
+        let pack, rows;
+        if (body.jobId) {
+          const job = requireObject("job", body.jobId);
+          ensure(!activeJobs.has(job.id), "Wait for the batch to finish");
+          pack = job.data.pack;
+          rows = job.data.results.filter((r) => r.status === "succeeded");
+        } else {
+          pack = body.trace?.pack;
+          rows = body.trace?.rows;
+        }
+        send(
+          201,
+          store.create(
+            "review-set",
+            createReviewSet({ name: body.name, pack, rows }),
+          ),
+        );
+        return;
+      }
+      if (
+        req.method === "POST" &&
+        ["/api/review-vote", "/api/review-resolve"].includes(path)
+      ) {
+        const set = requireObject("review-set", body.id);
+        if (set.revision !== body.revision) throw new Conflict();
+        const updated = (path.endsWith("-vote") ? vote : resolve)(
+          set.data,
+          body,
+        );
+        send(200, store.put("review-set", set.id, updated, set.revision));
+        return;
+      }
+      if (req.method === "POST" && path === "/api/review-export") {
+        const set = requireObject("review-set", body.id);
+        if (set.revision !== body.revision) throw new Conflict();
+        const dataset = exportDataset(set.data, body);
+        // Prevent the same state entering both tuning and holdout exports, even across review sets.
+        for (const row of dataset.cases) {
+          const previous = store.get("dataset-split", fingerprint(row.state));
+          ensure(
+            !previous || previous.data.split === dataset.split,
+            "This state was already exported in another split",
+          );
+        }
+        for (const row of dataset.cases) {
+          const id = fingerprint(row.state);
+          if (!store.get("dataset-split", id))
+            store.put("dataset-split", id, { split: dataset.split });
+        }
+        store.put(
+          "dataset",
+          dataset.fingerprint,
+          dataset,
+          store.get("dataset", dataset.fingerprint)?.revision ?? 0,
+        );
+        send(200, dataset);
         return;
       }
       if (req.method === "GET" && path === "/api/example") {

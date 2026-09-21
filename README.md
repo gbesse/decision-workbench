@@ -110,3 +110,11 @@ This alpha is for a **single operator on localhost**. It has no team accounts, h
 - [Contributing](CONTRIBUTING.md)
 
 The opportunity is a shared format for policies, evidence, corrections and extensions that many integrations can reuse. Adoption and useful plugins can compound; an early release alone does not guarantee a defensible market position.
+
+## Decision Review (v0.3)
+
+Open Decision Review from the sidebar. Create a review set from a finished Sheets job or import a Decision Blocks JSON trace `{schemaVersion:1,pack,rows:[{state,record}]}`. Each reviewer records a name, finite outcome and reason; disagreements block dataset exports until adjudicated. New votes invalidate adjudication. Original predictions and all human votes remain available. Reviewer names are **self-declared** in this local, single-operator workspace; they are not authenticated accounts.
+
+Select cases, a development/holdout split and minimum reviewer count before exporting. Exported states cannot enter both splits in this database. This guards exact duplicates, not semantically equivalent examples. Dataset exports include the policy, provenance and original judgments; keep them private. Imported records are structurally checked against their policy/state, not cryptographically authenticated against the original provider.
+
+The `@gbesse/decision-workbench/apps` export supplies the same loopback-only token authentication and SQLite persistence for Decision Migrate and Catalog Repair. It is not an internet-facing server.

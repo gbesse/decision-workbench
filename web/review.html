@@ -1,0 +1,55 @@
+<!doctype html>
+<!-- Purpose: Review model decisions independently, adjudicate disagreements and export labeled evaluation datasets. -->
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Decision Review</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <script type="module" src="/review.js"></script>
+  </head>
+  <body>
+    <main style="margin: 0; max-width: 1200px; width: 100%; padding: 32px">
+      <a href="/">← Workbench</a>
+      <h1>Decision Review</h1>
+      <p>
+        Les avis humains restent distincts des décisions du modèle. Les noms de
+        relecteurs sont déclaratifs dans cet espace local.
+      </p>
+      <p id="error" role="alert"></p>
+      <section class="panel">
+        <h2>Créer une revue</h2>
+        <label>Nom<input id="name" value="Revue support" /></label
+        ><label>Traitement terminé<select id="jobs"></select></label
+        ><button id="create">Créer depuis ce traitement</button
+        ><label
+          >Ou importer une trace Decision Blocks<input
+            id="trace"
+            type="file"
+            accept=".json"
+        /></label>
+      </section>
+      <section class="panel">
+        <label>Jeu de revue<select id="sets"></select></label
+        ><label>Votre nom<input id="actor" placeholder="Relecteur" /></label>
+      </section>
+      <div id="cases"></div>
+      <section class="panel">
+        <label
+          >Destination<select id="split">
+            <option value="development">Développement</option>
+            <option value="holdout">Évaluation indépendante</option>
+          </select></label
+        ><label
+          >Nombre minimal de relecteurs<input
+            id="minimum"
+            type="number"
+            min="1"
+            max="20"
+            value="1" /></label
+        ><button id="export">Exporter les cas sélectionnés</button>
+        <p>Un même état ne peut pas être exporté dans les deux destinations.</p>
+      </section>
+    </main>
+  </body>
+</html>

@@ -25,3 +25,7 @@ Added persistent form layouts with labels, controls, help, ordering, select opti
 Extended routes to 1–10 sequential actions with an approval and durable claim per step, bindings to earlier outputs, per-step invocation identities, plugin pins and capsule replay. Preserved legacy request fingerprints and single-action replay fields. Added tests for restart, stale approvals, schema restrictions, plugin changes and failed later steps, plus two new browser journeys. Extended the six-call live smoke to cover customized forms and two-step action review; real Jev verification passed without external action writes.
 
 Published a French comparative study of eight LLM projects using pinned README versions from 2022–2023 and a dated GitHub snapshot. Distinguished historical product propositions, current popularity, archival status and product hypotheses. Left OCR, a public plugin marketplace, host-by-host addon validation and adoption work as explicit backlog.
+
+## 2026-09-21 — Decision Review and reusable application host
+
+Added append-only reviewer votes, explicit disagreement adjudication, immutable model judgments, conflict-checked dataset publication and development/holdout state separation. Added local review UI and portable Decision Blocks trace import. Reused SQLite CAS, workspace lease and bounded local authentication for standalone apps. Validated 33 unit/API tests and seven Chromium journeys; no build or paid inference. Reviewer identities remain self-declared in local Workbench.
