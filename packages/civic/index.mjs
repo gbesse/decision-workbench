@@ -1,11 +1,14 @@
-// Purpose: Build a sourced French-company watch from the official business registry and Assemblée nationale feed.
-import { XMLParser } from "fast-xml-parser";
-import { evaluateDocument } from "@gbesse/jev-hemicycle";
+// Purpose: Build an incremental sourced French-company watch from the official business registry and Assembly feed.
+import { createHash } from "node:crypto";
+import {
+  ASSEMBLY_FEED,
+  evaluateDocument,
+  fetchAssemblyDocuments,
+} from "@gbesse/jev-hemicycle";
 import { ensure, snapshot } from "../core/contracts.mjs";
 
 export const COMPANY_API = "https://recherche-entreprises.api.gouv.fr/search";
-export const ASSEMBLY_FEED =
-  "https://www2.assemblee-nationale.fr/feeds/detail/documents-parlementaires";
+export { ASSEMBLY_FEED };
 
 function cleanIdentifier(value) {
   const identifier = String(value ?? "").replace(/\s/g, "");
@@ -85,76 +88,22 @@ export async function fetchCompanyProfile(identifier, options = {}) {
   });
 }
 
-const array = (value) =>
-  value === undefined ? [] : Array.isArray(value) ? value : [value];
-const plain = (value) => {
-  if (typeof value === "string" || typeof value === "number")
-    return String(value);
-  if (value && typeof value === "object")
-    return String(value["#text"] ?? value.__cdata ?? "");
-  return "";
-};
-const stripMarkup = (value) =>
-  plain(value)
-    .replace(/<[^>]*>/g, " ")
-    .replace(/&nbsp;/gi, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+/** French-compatible alias retained for existing Workbench integrations. */
+export const fetchParliamentaryDocuments = (options = {}) =>
+  fetchAssemblyDocuments(options);
 
-function officialAssemblyUrl(value) {
-  const url = new URL(plain(value));
-  ensure(
-    url.protocol === "https:" &&
-      (url.hostname === "assemblee-nationale.fr" ||
-        url.hostname.endsWith(".assemblee-nationale.fr")),
-    "Le flux contient un lien externe non autorisé",
-  );
-  return url.href;
-}
-
-/** Fetch and normalize the official Assemblée nationale publications RSS feed. */
-export async function fetchParliamentaryDocuments({
-  limit = 20,
-  ...options
-} = {}) {
-  ensure(
-    Number.isInteger(limit) && limit >= 1 && limit <= 50,
-    "La limite de documents doit être comprise entre 1 et 50",
-  );
-  const response = await fetchText(ASSEMBLY_FEED, options);
-  const xml = await response.text();
-  const parsed = new XMLParser({
-    ignoreAttributes: false,
-    processEntities: true,
-  }).parse(xml);
-  const items = array(parsed?.rss?.channel?.item);
-  const seen = new Set();
-  const documents = [];
-  for (const item of items) {
-    const sourceUrl = officialAssemblyUrl(item.link);
-    const id = plain(item.guid) || sourceUrl;
-    if (seen.has(id)) continue;
-    seen.add(id);
-    const title = stripMarkup(item.title);
-    const description = stripMarkup(item.description);
-    if (!title) continue;
-    documents.push({
-      id: String(id).slice(0, 500),
-      kind: "parliamentary-publication",
-      title: title.slice(0, 1000),
-      text: `${title}\n${description}`.slice(0, 20_000),
-      sourceUrl,
-      date: item.pubDate ? new Date(plain(item.pubDate)).toISOString() : null,
-      source: "Assemblée nationale",
-    });
-    if (documents.length === limit) break;
-  }
-  ensure(
-    documents.length > 0,
-    "Le flux de l’Assemblée nationale ne contient aucun document exploitable",
-  );
-  return documents;
-}
+const sourceDigest = (source) =>
+  createHash("sha256")
+    .update(
+      JSON.stringify({
+        id: source.id,
+        title: source.title,
+        text: source.text,
+        sourceUrl: source.sourceUrl,
+        date: source.date,
+      }),
+    )
+    .digest("hex");
 
 function hemicycleProvider(provider) {
   return {
@@ -187,21 +136,36 @@ export async function scanCivicWatch(
   );
   const company = await companyResolver(identifier);
   const documents = await documentResolver({ limit: maxDocuments });
+  const normalizedActivity = activityDescription.trim();
+  const sameWatch =
+    previousWatch?.company?.siren === company.siren &&
+    previousWatch?.activityDescription === normalizedActivity;
   const previous = new Map(
-    (previousWatch?.signals ?? []).map((signal) => [signal.id, signal.state]),
+    (sameWatch ? previousWatch.signals : []).map((signal) => [
+      signal.id,
+      signal,
+    ]),
   );
   const topic = {
     id: company.siren,
-    description: `${activityDescription.trim()} Entreprise: ${company.name}. Code APE/NAF: ${company.activityCode ?? "non renseigné"}. Département: ${company.department ?? "non renseigné"}.`,
+    description: `${normalizedActivity} Entreprise: ${company.name}. Code APE/NAF: ${company.activityCode ?? "non renseigné"}. Département: ${company.department ?? "non renseigné"}.`,
   };
   const signals = [];
   const usage = { input_tokens: 0, output_tokens: 0, requests: 0 };
+  let reusedSignals = 0;
   for (const source of documents) {
+    const documentDigest = sourceDigest(source);
+    const prior = previous.get(source.id);
+    if (prior?.documentDigest === documentDigest) {
+      signals.push(prior);
+      reusedSignals++;
+      continue;
+    }
     const result = await evaluateDocument(
       source,
       topic,
       hemicycleProvider(provider),
-      previous.get(source.id) ?? "unknown",
+      prior?.state ?? "unknown",
       { onThreshold, offThreshold },
     );
     usage.input_tokens += result.usage?.input_tokens ?? 0;
@@ -221,6 +185,7 @@ export async function scanCivicWatch(
       state: result.state,
       uncertain: result.uncertain,
       transition: result.transition,
+      documentDigest,
       operatorReview: null,
     });
   }
@@ -231,9 +196,10 @@ export async function scanCivicWatch(
     ]),
   );
   return snapshot({
-    schemaVersion: 1,
+    schemaVersion: 2,
     company,
-    activityDescription: activityDescription.trim(),
+    activityDescription: normalizedActivity,
+    maxDocuments,
     sources: [
       { name: company.source, url: company.sourceUrl },
       {
@@ -245,6 +211,11 @@ export async function scanCivicWatch(
     disclaimer:
       "Signal de veille à relire : ce résultat ne décrit pas le droit en vigueur et ne constitue pas un conseil juridique.",
     counts,
+    delta: {
+      analyzed: signals.length - reusedSignals,
+      reused: reusedSignals,
+      previousScanAt: sameWatch ? previousWatch.scannedAt : null,
+    },
     signals,
     usage,
   });

@@ -2,6 +2,14 @@
 
 This file records the purpose and technical decisions behind agent-authored changes.
 
+## 2026-09-25 — v0.5.0 incremental civic watch
+
+- Moved official Assemblée RSS acquisition into `jev-hemicycle` v0.2.0 and reused that tagged implementation directly.
+- Added content fingerprints so refreshes reuse unchanged Jev judgments and human reviews without another paid call.
+- Changed publications retain hysteresis state but are rescored and have stale operator review cleared; the UI reports
+  analyzed versus reused signals and exposes an explicit refresh action.
+- Upgraded the XML parser to a vulnerability-free release and added incremental-refresh regression coverage.
+
 ## 2026-09-21 — v0.4.0 complete civic product and focused Workbench
 
 Added an end-to-end French company public-watch workflow: exact SIREN/SIRET resolution through the open Annuaire des
