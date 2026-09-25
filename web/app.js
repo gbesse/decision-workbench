@@ -266,14 +266,14 @@ function civicView() {
     ),
   )}</div><div>${
     watch
-      ? `<section class="panel"><div class="panel-head"><div><h2>${escape(watch.data.company.name)}</h2><p>SIREN ${escape(watch.data.company.siren)} · ${escape(watch.data.company.activityCode ?? "activité non renseignée")}</p></div><span class="badge">${watch.data.counts.relevant} pertinents · ${watch.data.counts.unknown} incertains</span></div><p>${escape(watch.data.activityDescription)}</p><div class="source-strip"><a href="${escape(watch.data.company.sourceUrl)}" target="_blank" rel="noreferrer">Profil officiel ↗</a><span>${escape(watch.data.company.address ?? "Adresse non renseignée")}</span></div><div class="table-wrap"><table><thead><tr><th>Publication</th><th>Pertinence</th><th>État</th><th>Revue</th></tr></thead><tbody>${signals
+      ? `<section class="panel"><div class="panel-head"><div><h2>${escape(watch.data.company.name)}</h2><p>SIREN ${escape(watch.data.company.siren)} · ${escape(watch.data.company.activityCode ?? "activité non renseignée")}</p></div><span class="badge">${watch.data.counts.relevant} pertinents · ${watch.data.counts.unknown} incertains</span></div><p>${escape(watch.data.activityDescription)}</p>${watch.data.delta ? `<p>${watch.data.delta.analyzed} publication(s) analysée(s) · ${watch.data.delta.reused} résultat(s) inchangé(s) réutilisé(s)</p>` : ""}<div class="source-strip"><a href="${escape(watch.data.company.sourceUrl)}" target="_blank" rel="noreferrer">Profil officiel ↗</a><span>${escape(watch.data.company.address ?? "Adresse non renseignée")}</span></div><div class="table-wrap"><table><thead><tr><th>Publication</th><th>Pertinence</th><th>État</th><th>Revue</th></tr></thead><tbody>${signals
           .map(
             (signal) =>
               `<tr><td><a href="${escape(signal.sourceUrl)}" target="_blank" rel="noreferrer">${escape(signal.title)}</a><small>${escape(signal.source)}${signal.date ? ` · ${escape(signal.date.slice(0, 10))}` : ""}</small></td><td>${(signal.probability * 100).toFixed(1)} %</td><td><span class="badge ${signal.uncertain ? "warning" : ""}">${escape(signal.state)}</span></td><td><button data-action="inspect-civic-signal" data-id="${escape(signal.id)}">${signal.operatorReview ? escape(signal.operatorReview.decision) : "Relire"}</button></td></tr>`,
           )
           .join(
             "",
-          )}</tbody></table></div><div class="actions"><button data-action="export-civic-digest">Exporter le digest Markdown ↓</button></div><p>${escape(watch.data.disclaimer)}</p></section>`
+          )}</tbody></table></div><div class="actions"><button class="primary" data-action="refresh-civic-watch">Actualiser la veille</button><button data-action="export-civic-digest">Exporter le digest Markdown ↓</button></div><p>${escape(watch.data.disclaimer)}</p></section>`
       : '<section class="panel"><h2>Du SIRET au signal sourcé</h2><div class="flow"><span>Entreprise</span>→<span>Publications</span>→<span>Pertinence</span>→<span>Revue</span></div><div class="step"><span class="step-number">1</span><div><strong>Résoudre le profil officiel</strong><p>Nom, établissement, activité NAF et adresse sont conservés avec leur source.</p></div></div><div class="step"><span class="step-number">2</span><div><strong>Évaluer chaque publication</strong><p>Le module existant jev-hemicycle classe les documents sans masquer les incertitudes.</p></div></div><div class="step"><span class="step-number">3</span><div><strong>Relire et exporter</strong><p>La décision humaine reste distincte du score Jev et le digest garde les liens officiels.</p></div></div></section>'
   }</div></div>`;
 }
@@ -611,6 +611,19 @@ const actions = {
     detail(
       "Signal de veille",
       `<h3>${escape(signal.title)}</h3><p><a href="${escape(signal.sourceUrl)}" target="_blank" rel="noreferrer">Ouvrir la source officielle ↗</a></p>${signal.excerpt ? `<p>${escape(signal.excerpt)}</p>` : ""}${pretty({ probability: signal.probability, state: signal.state, uncertain: signal.uncertain, transition: signal.transition, operatorReview: signal.operatorReview })}<form id="civic-review-form" data-signal="${escape(signal.id)}"><label>Décision humaine<select name="decision"><option value="pending">À revoir</option><option value="confirmed" ${signal.operatorReview?.decision === "confirmed" ? "selected" : ""}>Confirmé</option><option value="dismissed" ${signal.operatorReview?.decision === "dismissed" ? "selected" : ""}>Écarté</option></select></label><label>Note<textarea name="note" maxlength="2000">${escape(signal.operatorReview?.note ?? "")}</textarea></label><button class="primary">Enregistrer la revue</button></form>`,
+    );
+  },
+  "refresh-civic-watch": async () => {
+    const current = state.civicWatch.data;
+    state.civicWatch = await api("civic/scan", {
+      identifier: current.company.identifier,
+      activityDescription: current.activityDescription,
+      maxDocuments: current.maxDocuments ?? current.signals.length,
+    });
+    await refresh();
+    notice(
+      `${state.civicWatch.data.delta?.analyzed ?? state.civicWatch.data.signals.length} nouvelle(s) analyse(s), ${state.civicWatch.data.delta?.reused ?? 0} résultat(s) réutilisé(s).`,
+      "success",
     );
   },
   "export-civic-digest": async () =>

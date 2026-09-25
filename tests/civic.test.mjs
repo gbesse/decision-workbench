@@ -87,3 +87,83 @@ test("runs the complete civic watch, preserves model output and records human re
   assert.match(digest, /assemblee-nationale\.fr/);
   assert.doesNotMatch(digest, /formation des praticiens/);
 });
+
+test("an incremental refresh reuses unchanged scores and human reviews without paid calls", async () => {
+  let calls = 0;
+  const provider = async (request) => {
+    calls++;
+    return syntheticProvider(request);
+  };
+  const input = {
+    identifier: "356000000",
+    activityDescription: "Distribution de courrier, colis et services postaux",
+    maxDocuments: 2,
+  };
+  const first = await scanCivicWatch(input, {
+    provider,
+    companyResolver: demoCompanyResolver,
+    documentResolver: demoDocumentResolver,
+  });
+  const reviewed = reviewCivicSignal(first, {
+    signalId: first.signals[0].id,
+    decision: "confirmed",
+    note: "Revue conservée",
+  });
+  assert.equal(calls, 2);
+  const refreshed = await scanCivicWatch(
+    { ...input, previousWatch: reviewed },
+    {
+      provider,
+      companyResolver: demoCompanyResolver,
+      documentResolver: demoDocumentResolver,
+    },
+  );
+  assert.equal(calls, 2);
+  assert.deepEqual(refreshed.delta, {
+    analyzed: 0,
+    reused: 2,
+    previousScanAt: reviewed.scannedAt,
+  });
+  assert.equal(refreshed.usage.requests, 0);
+  assert.equal(refreshed.signals[0].operatorReview.note, "Revue conservée");
+});
+
+test("a changed source is rescored with hysteresis and its stale review is cleared", async () => {
+  const input = {
+    identifier: "356000000",
+    activityDescription: "Distribution de courrier, colis et services postaux",
+    maxDocuments: 2,
+  };
+  const first = await scanCivicWatch(input, {
+    provider: syntheticProvider,
+    companyResolver: demoCompanyResolver,
+    documentResolver: demoDocumentResolver,
+  });
+  const reviewed = reviewCivicSignal(first, {
+    signalId: first.signals[0].id,
+    decision: "confirmed",
+  });
+  let calls = 0;
+  const refreshed = await scanCivicWatch(
+    { ...input, previousWatch: reviewed },
+    {
+      provider: async (request) => {
+        calls++;
+        return syntheticProvider(request);
+      },
+      companyResolver: demoCompanyResolver,
+      documentResolver: async (options) => {
+        const documents = await demoDocumentResolver(options);
+        documents[0] = {
+          ...documents[0],
+          text: documents[0].text + " Mise à jour.",
+        };
+        return documents;
+      },
+    },
+  );
+  assert.equal(calls, 1);
+  assert.equal(refreshed.delta.analyzed, 1);
+  assert.equal(refreshed.delta.reused, 1);
+  assert.equal(refreshed.signals[0].operatorReview, null);
+});

@@ -23,6 +23,12 @@ test("company watch resolves a profile, evaluates sourced signals, records revie
   await page.getByRole("button", { name: "Enregistrer la revue" }).click();
   await expect(page.getByRole("button", { name: "confirmed" })).toBeVisible();
   await page.getByRole("button", { name: "Fermer le message" }).click();
+  await page.getByRole("button", { name: "Actualiser la veille" }).click();
+  await expect(
+    page.getByText(/0 publication\(s\) analysée\(s\).*2 résultat/),
+  ).toBeVisible();
+  await expect(page.getByRole("button", { name: "confirmed" })).toBeVisible();
+  await page.getByRole("button", { name: "Fermer le message" }).click();
   await page.screenshot({ path: "docs/workbench-civic.png", fullPage: true });
   const download = page.waitForEvent("download");
   await page

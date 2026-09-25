@@ -14,13 +14,14 @@ declared company's activity? It produces review signals, not a statement of appl
    date and official profile link. Directors and financial data returned by the source are discarded.
 3. Recent publications are fetched from the official Assemblée nationale RSS feed and normalized by the existing
    `jev-hemicycle` package.
-4. Jev evaluates each publication against the operator's activity description. The stored score and state are never
-   overwritten by the operator's separate review.
+4. Jev evaluates each new or changed publication against the operator's activity description. A SHA-256 fingerprint
+   lets refreshes reuse unchanged scores and reviews; changed evidence is rescored and its stale review is cleared.
+   The stored score and state are never overwritten by the operator's separate review.
 5. A Markdown digest includes every non-dismissed signal, score, review state and official link.
 
 The live source calls have explicit 15-second deadlines. A scan accepts 1–20 documents; one Jev request is made per
-document. Source or provider failures abort the scan and enter the Workbench error registry instead of producing a
-partial digest.
+new or changed document and none when the feed window is unchanged. Source or provider failures abort the scan and
+enter the Workbench error registry instead of producing a partial digest.
 
 ## Verification
 
@@ -30,7 +31,8 @@ irrelevant with probabilities between 0.01 and 0.02. This proves wiring and gros
 accuracy.
 
 Default tests never call a public source or paid model. They use explicit fixtures and cover source minimization, RSS
-link restrictions, scan persistence, human review separation, digest evidence links and the complete browser journey.
+link restrictions, incremental reuse, changed-source rescoring, scan persistence, human review separation, digest
+evidence links and the complete browser journey.
 
 ## Boundaries
 

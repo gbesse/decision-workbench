@@ -11,7 +11,7 @@ French public information for a company identified by SIREN or SIRET.
 
 ![Company watch with sourced parliamentary signals](docs/workbench-civic.png)
 
-**v0.4.0 · Node.js 24+ · MIT · independent of TypeSafe.** The browser UI is French. Jev inference is a separate paid
+**v0.5.0 · Node.js 24+ · MIT · independent of TypeSafe.** The browser UI is French. Jev inference is a separate paid
 TypeSafe service; this project does not redistribute model weights.
 
 ## Try the complete product offline
@@ -34,7 +34,9 @@ TYPESAFE_API_KEY=... npm start
 ```
 
 The server fetches the public company profile and official Assembly feed, then makes one paid Jev request per selected
-publication. The key stays server-side. Each scan is limited to 20 documents and every source call has a deadline.
+new or changed publication. An incremental refresh reuses unchanged judgments and their human reviews, so it makes no
+paid call when the feed window is unchanged. The key stays server-side. Each scan is limited to 20 documents and every
+source call has a deadline.
 
 ## One workflow, two entries
 
@@ -80,7 +82,7 @@ const { state, evidence } = mapState(source, "1", {
 
 Importable modules include `./civic`, `./statebridge`, `./review`, `./sheets`, `./ui`, `./agent`, `./plugins`, `./apps`
 and `./storage`. Install the tagged repository with
-`npm install --ignore-scripts github:gbesse/decision-workbench#v0.4.0`.
+`npm install --ignore-scripts github:gbesse/decision-workbench#v0.5.0`.
 
 ## Operate and verify
 
@@ -101,7 +103,7 @@ npm run test:browser
 `npm run test:live` makes at most six paid Jev calls using fictional generic examples. `npm run test:civic:live`
 resolves a real public profile, fetches the live Assembly feed and makes exactly three paid calls. Neither runs in CI.
 
-There is no build step. Default verification covers 37 module/API tests and eight Chromium journeys. This remains a
+There is no build step. Default verification covers 39 module/API tests and eight Chromium journeys. This remains a
 single-operator localhost application: no accounts, hosted deployment, OCR, scheduler, automatic email or legal advice.
 
 ## Documentation

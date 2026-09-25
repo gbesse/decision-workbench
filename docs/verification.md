@@ -34,6 +34,16 @@ Only fictional support requests were sent. No external action write was performe
 
 This is a small live integration check, not an accuracy benchmark or load test. Production workloads, a remote webhook service, multiuser deployment and the cross-addon integration suite remain untested. The original v0.1.0 release was published before this live verification; its historical release notes reflect that earlier scope.
 
+## v0.5.0 incremental civic workflow
+
+The module suite now covers first scan, human review, a no-cost refresh that reuses unchanged judgments and reviews,
+and selective rescoring when one publication changes. The browser suite verifies the complete civic journey alongside
+the seven existing Workbench journeys. The official RSS adapter is supplied by tagged `jev-hemicycle` v0.2.0, and
+`npm audit --audit-level=high` reports no vulnerabilities.
+
+The 2026-09-25 live smoke resolved La Poste, fetched three current official publications, made exactly three Jev calls,
+then immediately refreshed the same watch with zero additional model calls.
+
 ## v0.4.0 civic workflow check
 
 The default suite adds exact company-response minimization, restricted official RSS links, reuse of the pinned
