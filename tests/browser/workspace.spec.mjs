@@ -5,7 +5,7 @@ const open = async (page) => {
   await page.goto("/#token=browser-fixture-operator-token-24-plus");
   await expect(
     page.getByRole("heading", {
-      name: "Quels textes peuvent toucher cette entreprise ?",
+      name: "Quels textes ou marchés peuvent toucher cette entreprise ?",
     }),
   ).toBeVisible();
 };
@@ -14,9 +14,12 @@ test("company watch resolves a profile, evaluates sourced signals, records revie
 }) => {
   await open(page);
   await page.getByRole("button", { name: "Préremplir La Poste" }).click();
-  await page.getByRole("button", { name: "Analyser les publications" }).click();
+  await page
+    .getByRole("button", { name: "Analyser la veille publique" })
+    .click();
   await expect(page.getByRole("heading", { name: "LA POSTE" })).toBeVisible();
-  await expect(page.locator("tbody tr")).toHaveCount(2);
+  await expect(page.locator("tbody tr")).toHaveCount(3);
+  await expect(page.getByText("Marché public", { exact: false })).toBeVisible();
   await page.getByRole("button", { name: "Relire" }).first().click();
   await page.getByLabel("Décision humaine").selectOption("confirmed");
   await page.getByLabel("Note", { exact: true }).fill("À transmettre");
@@ -25,7 +28,7 @@ test("company watch resolves a profile, evaluates sourced signals, records revie
   await page.getByRole("button", { name: "Fermer le message" }).click();
   await page.getByRole("button", { name: "Actualiser la veille" }).click();
   await expect(
-    page.getByText(/0 publication\(s\) analysée\(s\).*2 résultat/),
+    page.getByText(/0 signal\(aux\) analysé\(s\).*3 résultat/),
   ).toBeVisible();
   await expect(page.getByRole("button", { name: "confirmed" })).toBeVisible();
   await page.getByRole("button", { name: "Fermer le message" }).click();

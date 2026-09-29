@@ -3,6 +3,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   fetchCompanyProfile,
+  fetchCivicDocuments,
   fetchParliamentaryDocuments,
   scanCivicWatch,
   reviewCivicSignal,
@@ -58,6 +59,47 @@ test("parses only HTTPS Assemblée nationale links from the official RSS shape",
   );
 });
 
+test("merges Assembly and BOAMP results into one newest-first bounded source window", async () => {
+  const documents = await fetchCivicDocuments({
+    limit: 2,
+    parliamentaryResolver: async () => [
+      {
+        id: "assembly",
+        kind: "parliamentary-publication",
+        title: "Texte",
+        text: "Texte public",
+        sourceUrl: "https://www.assemblee-nationale.fr/dyn/17/textes/x",
+        date: "2026-09-28T10:00:00.000Z",
+        source: "Assemblée nationale",
+      },
+    ],
+    procurementResolver: async () => [
+      {
+        id: "older-market",
+        kind: "procurement-notice",
+        title: "Marché ancien",
+        text: "Marché ancien",
+        sourceUrl: "https://www.boamp.fr/pages/avis/?q=idweb:1",
+        date: "2026-09-28T11:00:00.000Z",
+        source: "BOAMP · DILA",
+      },
+      {
+        id: "new-market",
+        kind: "procurement-notice",
+        title: "Marché récent",
+        text: "Marché récent",
+        sourceUrl: "https://www.boamp.fr/pages/avis/?q=idweb:2",
+        date: "2026-09-29T10:00:00.000Z",
+        source: "BOAMP · DILA",
+      },
+    ],
+  });
+  assert.deepEqual(
+    documents.map((document) => document.id),
+    ["new-market", "assembly"],
+  );
+});
+
 test("runs the complete civic watch, preserves model output and records human review separately", async () => {
   const watch = await scanCivicWatch(
     {
@@ -86,6 +128,46 @@ test("runs the complete civic watch, preserves model output and records human re
   assert.match(digest, /À transmettre/);
   assert.match(digest, /assemblee-nationale\.fr/);
   assert.doesNotMatch(digest, /formation des praticiens/);
+});
+
+test("scores a BOAMP opportunity through jev-marches and exports procurement evidence", async () => {
+  const procurement = {
+    id: "26-demo",
+    kind: "procurement-notice",
+    title: "Distribution de courrier et colis",
+    text: "Distribution de courrier et colis\nAcheteur: Ville exemple",
+    buyer: "Ville exemple",
+    departments: ["75"],
+    descriptors: ["Services postaux"],
+    contractTypes: ["SERVICES"],
+    deadline: "2099-12-01T12:00:00.000Z",
+    date: "2026-09-29T00:00:00.000Z",
+    sourceUrl: "https://www.boamp.fr/pages/avis/?q=idweb:26-demo",
+    source: "BOAMP · DILA",
+  };
+  const watch = await scanCivicWatch(
+    {
+      identifier: "356000000",
+      activityDescription:
+        "Distribution de courrier, colis et services postaux",
+      maxDocuments: 1,
+    },
+    {
+      provider: syntheticProvider,
+      companyResolver: demoCompanyResolver,
+      documentResolver: async () => [procurement],
+    },
+  );
+  assert.equal(watch.schemaVersion, 3);
+  assert.equal(watch.signals[0].metric, "fit");
+  assert.equal(watch.signals[0].score, 3);
+  assert.equal(watch.signals[0].state, "relevant");
+  assert.equal(watch.signals[0].buyer, "Ville exemple");
+  assert.equal(watch.usage.requests, 1);
+  assert.ok(watch.sources.some((source) => source.name.startsWith("BOAMP")));
+  const digest = renderCivicDigest(watch);
+  assert.match(digest, /Adéquation à l’activité : 3\/3/);
+  assert.match(digest, /Ville exemple/);
 });
 
 test("an incremental refresh reuses unchanged scores and human reviews without paid calls", async () => {

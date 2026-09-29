@@ -36,6 +36,20 @@ export const demoCivicDocuments = [
     date: "2026-09-18T00:00:00.000Z",
     source: "Assemblée nationale · démonstration hors ligne",
   },
+  {
+    id: "demo-boamp-postal-1",
+    kind: "procurement-notice",
+    title: "Distribution de plis et colis pour un réseau de collectivités",
+    text: "Distribution de plis et colis pour un réseau de collectivités\nAcheteur: Métropole de démonstration\nDescripteurs: Services postaux, Logistique\nType: SERVICES\nDépartements: 75, 92\nDate limite: 2026-11-15T12:00:00.000Z",
+    buyer: "Métropole de démonstration",
+    departments: ["75", "92"],
+    descriptors: ["Services postaux", "Logistique"],
+    contractTypes: ["SERVICES"],
+    deadline: "2026-11-15T12:00:00.000Z",
+    date: "2026-09-20T12:00:00.000Z",
+    sourceUrl: "https://www.boamp.fr/pages/avis/?q=idweb:demo-boamp-postal-1",
+    source: "BOAMP · démonstration hors ligne",
+  },
 ];
 
 export const demoCompanyResolver = async () =>

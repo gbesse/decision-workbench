@@ -34,6 +34,15 @@ Only fictional support requests were sent. No external action write was performe
 
 This is a small live integration check, not an accuracy benchmark or load test. Production workloads, a remote webhook service, multiuser deployment and the cross-addon integration suite remain untested. The original v0.1.0 release was published before this live verification; its historical release notes reflect that earlier scope.
 
+## v0.6.0 multi-source company watch
+
+The offline suite adds newest-first merging of Assembly and BOAMP records, procurement-fit scoring through tagged
+`jev-marches` v0.2.1, procurement evidence in the digest and a browser journey showing both source types. The live smoke
+uses current official sources, then verifies that an immediate refresh makes no additional Jev call.
+
+The 2026-09-29 run selected two current BOAMP notices and one Assembly publication, made three Jev calls, preserved
+all three official links and made zero calls on the immediate refresh. All three unrelated signals were rejected.
+
 ## v0.5.0 incremental civic workflow
 
 The module suite now covers first scan, human review, a no-cost refresh that reuses unchanged judgments and reviews,
