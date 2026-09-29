@@ -11,7 +11,7 @@ French public information for a company identified by SIREN or SIRET.
 
 ![Company watch with sourced parliamentary signals](docs/workbench-civic.png)
 
-**v0.5.0 · Node.js 24+ · MIT · independent of TypeSafe.** The browser UI is French. Jev inference is a separate paid
+**v0.6.0 · Node.js 24+ · MIT · independent of TypeSafe.** The browser UI is French. Jev inference is a separate paid
 TypeSafe service; this project does not redistribute model weights.
 
 ## Try the complete product offline
@@ -23,9 +23,9 @@ npm ci --ignore-scripts
 npm start -- --demo
 ```
 
-Open the private localhost link, choose **Préremplir La Poste**, then **Analyser les publications**. The offline example
-resolves a company profile, evaluates two sourced fixtures, lets you confirm or dismiss a signal and exports a Markdown
-digest. It makes no network or Jev call and is not an accuracy demonstration.
+Open the private localhost link, choose **Préremplir La Poste**, then **Analyser la veille publique**. The offline
+example resolves a company profile, evaluates sourced parliamentary and procurement fixtures, lets you confirm or
+dismiss a signal and exports a Markdown digest. It makes no network or Jev call and is not an accuracy demonstration.
 
 For the real workflow:
 
@@ -33,18 +33,18 @@ For the real workflow:
 TYPESAFE_API_KEY=... npm start
 ```
 
-The server fetches the public company profile and official Assembly feed, then makes one paid Jev request per selected
-new or changed publication. An incremental refresh reuses unchanged judgments and their human reviews, so it makes no
-paid call when the feed window is unchanged. The key stays server-side. Each scan is limited to 20 documents and every
-source call has a deadline.
+The server fetches the public company profile, the official Assembly feed and current BOAMP procurement notices, then
+makes one paid Jev request per selected new or changed signal. An incremental refresh reuses unchanged judgments and
+their human reviews, so it makes no paid call when the source window is unchanged. The key stays server-side. Each scan
+is limited to 20 signals and every source call has a deadline.
 
 ## One workflow, two entries
 
 | Stage    | Company watch                                     | Your own documents                             |
 | -------- | ------------------------------------------------- | ---------------------------------------------- |
-| Source   | Annuaire des Entreprises + Assemblée nationale    | CSV, JSON, text, HTML, email or textual PDF    |
+| Source   | Annuaire + Assemblée nationale + BOAMP            | CSV, JSON, text, HTML, email or textual PDF    |
 | State    | Company profile + declared activity + publication | Explicit field mapping with evidence pointers  |
-| Decision | Relevance signal through `jev-hemicycle`          | Versioned DecisionPack                         |
+| Decision | Impact via `jev-hemicycle`; fit via `jev-marches` | Versioned DecisionPack                         |
 | Review   | Confirm, dismiss or keep pending                  | Correct a row without overwriting model output |
 | Export   | Evidence-linked Markdown digest                   | CSV, JSON, DecisionPack or evaluation dataset  |
 
@@ -54,6 +54,7 @@ plugins remain available as advanced tools, but they all serve the same source �
 ## Existing projects reused directly
 
 - [Jev Hémicycle](https://github.com/gbesse/jev-hemicycle) normalizes and evaluates parliamentary publications.
+- [Jev Marchés](https://github.com/gbesse/jev-marches) fetches and evaluates official BOAMP procurement notices.
 - [DecisionPacks](https://github.com/gbesse/decisionpacks) validates policies, calls Jev and replays decision rules.
 - [Question Forge](https://github.com/gbesse/question-forge) compares wording on development and held-out examples.
 - [Agent Capsule](https://github.com/gbesse/agent-capsule) captures approved actions for tool-free replay.
@@ -82,7 +83,7 @@ const { state, evidence } = mapState(source, "1", {
 
 Importable modules include `./civic`, `./statebridge`, `./review`, `./sheets`, `./ui`, `./agent`, `./plugins`, `./apps`
 and `./storage`. Install the tagged repository with
-`npm install --ignore-scripts github:gbesse/decision-workbench#v0.5.0`.
+`npm install --ignore-scripts github:gbesse/decision-workbench#v0.6.0`.
 
 ## Operate and verify
 
@@ -103,7 +104,7 @@ npm run test:browser
 `npm run test:live` makes at most six paid Jev calls using fictional generic examples. `npm run test:civic:live`
 resolves a real public profile, fetches the live Assembly feed and makes exactly three paid calls. Neither runs in CI.
 
-There is no build step. Default verification covers 39 module/API tests and eight Chromium journeys. This remains a
+There is no build step. Default verification covers 41 module/API tests and eight Chromium journeys. This remains a
 single-operator localhost application: no accounts, hosted deployment, OCR, scheduler, automatic email or legal advice.
 
 ## Documentation

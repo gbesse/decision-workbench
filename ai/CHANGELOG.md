@@ -2,6 +2,18 @@
 
 This file records the purpose and technical decisions behind agent-authored changes.
 
+## 2026-09-29 — v0.6.0 multi-source company watch
+
+- Added current public-procurement opportunities to the same company-watch product, reusing tagged `jev-marches`
+  v0.2.1 rather than opening another interface or copying its decision logic.
+- Merges official Assembly and BOAMP records into one recent bounded window with at least one slot per source;
+  parliamentary texts retain probability relevance while procurement notices expose a 0–3 activity-fit score, score
+  confidence, buyer, deadline and blocker.
+- Incremental fingerprints, retained human review and zero-call refreshes now work across both source types.
+- Added mixed-source module and browser coverage plus evidence-rich Markdown export for procurement opportunities.
+- Upgraded to DecisionPacks v0.2.0 after the live multi-choice smoke exposed valid two-decimal Jev distributions that
+  the earlier fixed 0.001 sum tolerance rejected.
+
 ## 2026-09-25 — v0.5.0 incremental civic watch
 
 - Moved official Assemblée RSS acquisition into `jev-hemicycle` v0.2.0 and reused that tagged implementation directly.

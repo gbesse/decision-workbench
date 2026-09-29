@@ -14,6 +14,9 @@ export async function syntheticProvider({ model, state, questions }) {
     if (q.type === "choice") {
       const keys = Object.keys(q.criteria);
       let chosen =
+        (state?.notice?.kind === "procurement-notice" && keys.includes("none")
+          ? "none"
+          : null) ??
         keys.find(
           (k) =>
             /bill|refund|invoice/.test(k) &&
@@ -45,10 +48,22 @@ export async function syntheticProvider({ model, state, questions }) {
         noul: civicRelevant || /urgent|refund/.test(text) ? 0.92 : 0.08,
       };
     } else {
+      const procurementFit =
+        state?.notice?.kind === "procurement-notice" &&
+        /postal|courrier|colis|livraison/.test(text);
+      const score = procurementFit ? q.criteria.length - 1 : 0;
       const probabilities = Object.fromEntries(
-        q.criteria.map((_, i) => [String(i), i === 0 ? 1 : 0]),
+        q.criteria.map((_, i) => [
+          String(i),
+          i === score ? 0.92 : 0.08 / (q.criteria.length - 1),
+        ]),
       );
-      answers[id] = { type: "score", score: 0, confidence: 1, probabilities };
+      answers[id] = {
+        type: "score",
+        score,
+        confidence: 0.84,
+        probabilities,
+      };
     }
   }
   return { model, answers };
