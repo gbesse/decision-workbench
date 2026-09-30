@@ -15,6 +15,14 @@ import { ensure, snapshot } from "../core/contracts.mjs";
 export const COMPANY_API = "https://recherche-entreprises.api.gouv.fr/search";
 export { ASSEMBLY_FEED };
 
+function validIsoDate(value) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const date = new Date(`${value}T00:00:00.000Z`);
+  return (
+    !Number.isNaN(date.valueOf()) && date.toISOString().slice(0, 10) === value
+  );
+}
+
 function cleanIdentifier(value) {
   const identifier = String(value ?? "").replace(/\s/g, "");
   ensure(
@@ -100,12 +108,17 @@ export const fetchParliamentaryDocuments = (options = {}) =>
 /** Merge official parliamentary publications and procurement notices into one recent, bounded source window. */
 export async function fetchCivicDocuments({
   limit = 10,
+  since = null,
   parliamentaryResolver = fetchParliamentaryDocuments,
   procurementResolver = fetchBoampNotices,
 } = {}) {
   ensure(
     Number.isInteger(limit) && limit >= 1 && limit <= 20,
     "Analysez entre 1 et 20 signaux",
+  );
+  ensure(
+    since === null || validIsoDate(since),
+    "La date de début doit suivre le format AAAA-MM-JJ",
   );
   const [parliamentary, procurement] = await Promise.all([
     parliamentaryResolver({ limit }),
@@ -117,7 +130,17 @@ export async function fetchCivicDocuments({
         String(right.date ?? "").localeCompare(String(left.date ?? "")) ||
         left.id.localeCompare(right.id),
     );
-  const pools = [newestFirst(parliamentary), newestFirst(procurement)];
+  const inWindow = (items) =>
+    since === null
+      ? items
+      : items.filter(
+          (item) =>
+            typeof item.date === "string" && item.date.slice(0, 10) >= since,
+        );
+  const pools = [
+    newestFirst(inWindow(parliamentary)),
+    newestFirst(inWindow(procurement)),
+  ];
   if (limit === 1) return newestFirst(pools.flat()).slice(0, 1);
   // BOAMP publishes far more records than Parliament. Reserve one position per source so a high-volume stream cannot
   // erase the other, then fill the remaining bounded window strictly by recency.
@@ -188,7 +211,13 @@ function procurementState(result, previousState) {
 
 /** Resolve a company, merge official public sources and classify each signal through the matching existing adapter. */
 export async function scanCivicWatch(
-  { identifier, activityDescription, maxDocuments = 10, previousWatch = null },
+  {
+    identifier,
+    activityDescription,
+    maxDocuments = 10,
+    since = null,
+    previousWatch = null,
+  },
   {
     provider,
     companyResolver = fetchCompanyProfile,
@@ -209,14 +238,28 @@ export async function scanCivicWatch(
     Number.isInteger(maxDocuments) && maxDocuments >= 1 && maxDocuments <= 20,
     "Analysez entre 1 et 20 signaux",
   );
+  ensure(
+    since === null || validIsoDate(since),
+    "La date de début doit suivre le format AAAA-MM-JJ",
+  );
   const company = await companyResolver(identifier);
-  const documents = await (documentResolver ?? fetchCivicDocuments)({
+  const resolvedDocuments = await (documentResolver ?? fetchCivicDocuments)({
     limit: maxDocuments,
+    since,
   });
+  const documents =
+    since === null
+      ? resolvedDocuments
+      : resolvedDocuments.filter(
+          (document) =>
+            typeof document.date === "string" &&
+            document.date.slice(0, 10) >= since,
+        );
   const normalizedActivity = activityDescription.trim();
   const sameWatch =
     previousWatch?.company?.siren === company.siren &&
-    previousWatch?.activityDescription === normalizedActivity;
+    previousWatch?.activityDescription === normalizedActivity &&
+    (previousWatch?.since ?? null) === since;
   const previous = new Map(
     (sameWatch ? previousWatch.signals : []).map((signal) => [
       signal.id,
@@ -303,6 +346,7 @@ export async function scanCivicWatch(
     company,
     activityDescription: normalizedActivity,
     maxDocuments,
+    since,
     sources: [
       { name: company.source, url: company.sourceUrl },
       ...(signals.some((signal) => signal.kind !== "procurement-notice")

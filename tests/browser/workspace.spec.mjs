@@ -143,6 +143,14 @@ test("policy authoring and question comparison are available without a SDK", asy
   await page.getByLabel("Nom du pack", { exact: true }).fill("browser/policy");
   await page.getByRole("button", { name: "Créer la politique" }).click();
   await expect(page.getByRole("dialog")).not.toBeVisible();
+  await page
+    .locator('#quick-decision-form textarea[name="state"]')
+    .fill('{"text":"Please refund the duplicate invoice"}');
+  await page.getByRole("button", { name: "Évaluer cet état" }).click();
+  await expect(page.getByText("Décision :")).toContainText("billing");
+  await expect(
+    page.getByText("Probabilités et trace", { exact: true }),
+  ).toBeVisible();
   await page.getByLabel("Version", { exact: true }).fill("0.2.0");
   await page.getByLabel("Probabilité minimale").fill("0.99");
   await page
