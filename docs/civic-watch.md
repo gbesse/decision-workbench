@@ -16,6 +16,7 @@ It produces review signals, not a statement of applicable law or a guarantee tha
 3. Recent publications are fetched from the official Assemblée nationale RSS feed by `jev-hemicycle`; current public
    contracts are fetched from the open BOAMP/DILA API by `jev-marches`. When the shared limit is at least two, one slot
    is reserved for each source before the rest is filled by recency, preventing BOAMP volume from hiding Parliament.
+   An optional inclusive `since` date removes older or undated records before that balancing step.
 4. Jev evaluates each new or changed parliamentary publication for material relevance and each procurement notice for
    company fit and its main blocker. A SHA-256 fingerprint lets refreshes reuse unchanged scores and reviews; changed
    evidence is rescored and its stale review is cleared. Model output is never overwritten by operator review.
@@ -24,6 +25,13 @@ It produces review signals, not a statement of applicable law or a guarantee tha
 The live source calls have explicit 15-second deadlines. A scan accepts 1–20 merged signals; one Jev request is made
 per new or changed eligible signal and none when the source window is unchanged. Expired procurement notices are
 rejected in code. Source or provider failures abort the scan instead of producing a partial digest.
+
+## One-shot command
+
+The installable `jev-france impact` command calls this same implementation; it is not a second civic engine. It accepts
+`--siret`/`--siren`, `--activity`, `--depuis`, `--limit`, Markdown or JSON output, and an optional private JSON
+checkpoint. The checkpoint preserves the exact prior judgments so an unchanged refresh makes no paid calls. `--demo`
+uses only checked-in fixtures and synthetic decisions.
 
 ## Verification
 

@@ -100,6 +100,36 @@ test("merges Assembly and BOAMP results into one newest-first bounded source win
   );
 });
 
+test("filters the merged official window from an explicit inclusive date", async () => {
+  const make = (id, kind, date) => ({
+    id,
+    kind,
+    title: id,
+    text: id,
+    sourceUrl:
+      kind === "procurement-notice"
+        ? `https://www.boamp.fr/pages/avis/?q=idweb:${id}`
+        : `https://www.assemblee-nationale.fr/dyn/17/textes/${id}`,
+    date,
+    source: kind === "procurement-notice" ? "BOAMP" : "Assemblée",
+  });
+  const documents = await fetchCivicDocuments({
+    limit: 5,
+    since: "2026-09-20",
+    parliamentaryResolver: async () => [
+      make("before", "parliamentary-publication", "2026-09-19T23:59:59Z"),
+      make("on-date", "parliamentary-publication", "2026-09-20T00:00:00Z"),
+    ],
+    procurementResolver: async () => [
+      make("after", "procurement-notice", "2026-09-21T00:00:00Z"),
+    ],
+  });
+  assert.deepEqual(
+    documents.map((document) => document.id),
+    ["after", "on-date"],
+  );
+});
+
 test("runs the complete civic watch, preserves model output and records human review separately", async () => {
   const watch = await scanCivicWatch(
     {

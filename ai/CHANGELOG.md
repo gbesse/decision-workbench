@@ -2,6 +2,19 @@
 
 This file records the purpose and technical decisions behind agent-authored changes.
 
+## 2026-09-30 — v0.7.0 direct civic and DecisionPack gestures
+
+- Added the installable `jev-france impact`/`decision-workbench impact` command, reusing the same Annuaire,
+  Hémicycle, Marchés, incremental scoring and Markdown digest code as the browser product.
+- Added an inclusive `--depuis`/`since` source window, JSON output and private incremental checkpoint support; the
+  complete CLI is covered with synthetic fixtures and makes no hidden network call in default tests.
+- Recentered the Atelier around a visible quick evaluation: paste a JSON state, select a DecisionPack, make one bounded
+  call and inspect the original probabilities and trace without importing a table or generating a form.
+- Added focused module, CLI and browser regressions. Default verification now covers 44 module/API tests and eight
+  Chromium journeys.
+- Verified the installed civic path against live Annuaire/BOAMP sources: the first bounded run analyzed two current
+  records; the immediate checkpoint replay reused both with zero requests and zero tokens.
+
 ## 2026-09-29 — v0.6.0 multi-source company watch
 
 - Added current public-procurement opportunities to the same company-watch product, reusing tagged `jev-marches`
