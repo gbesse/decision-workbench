@@ -53,6 +53,14 @@ makes one paid Jev request per selected new or changed signal. An incremental re
 their human reviews, so it makes no paid call when the source window is unchanged. The key stays server-side. Each scan
 is limited to 20 signals and every source call has a deadline.
 
+## Un résumé de veille prêt à partager · A concise watch brief · Un resumen de vigilancia
+
+`npm run demo:brief` produit un JSON court à partir des mêmes sources et décisions **synthétiques** que la démonstration civique. Il conserve le nombre de signaux et les liens de source, pour illustrer ce qu'une intégration pourrait afficher. Ce n'est ni une veille réelle ni une mesure de qualité.
+
+`npm run demo:brief` produces compact JSON from the same **synthetic** civic sources and decisions. It keeps signal counts and source links to show what an integration could display. It is neither a live watch nor a quality measurement.
+
+`npm run demo:brief` genera un JSON breve a partir de las mismas fuentes y decisiones cívicas **sintéticas**. Conserva los recuentos y enlaces de origen para mostrar lo que podría presentar una integración. No es una vigilancia real ni una medición de calidad.
+
 ## One workflow, two entries
 
 | Stage    | Company watch                                     | Your own documents                             |
