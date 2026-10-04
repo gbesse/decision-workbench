@@ -51,6 +51,73 @@ test("API requires authentication, rejects foreign origins and serves a protecte
   );
   assert.match(await page.text(), /Decision Workbench/);
 });
+test("market radar persists a sourced inbox and operator outcomes without changing model decisions", async (t) => {
+  const { call, app } = await host(t);
+  const created = await call("radar/scan", {
+    identifier: "356000000",
+    activityDescription:
+      "Distribution de courrier et colis, services postaux et logistique du dernier kilomètre.",
+    maxNotices: 4,
+    maxCalls: 3,
+    maxResults: 5,
+  });
+  assert.equal(created.status, 201);
+  assert.deepEqual(created.body.data.counts, {
+    pursue: 1,
+    investigate: 1,
+    ignore: 2,
+  });
+  const opportunity = created.body.data.opportunities[0];
+  const updated = await call("radar/outcome", {
+    id: created.body.id,
+    revision: created.body.revision,
+    noticeId: opportunity.noticeId,
+    stage: "bid",
+    note: "Go/no-go validé",
+  });
+  assert.equal(updated.status, 200);
+  assert.equal(updated.body.data.opportunities[0].operatorOutcome.stage, "bid");
+  assert.equal(updated.body.data.opportunities[0].status, opportunity.status);
+  assert.ok(
+    app.store
+      .events()
+      .some((event) => event.type === "radar.opportunity-updated"),
+  );
+  const refreshed = await call("radar/scan", {
+    radarId: updated.body.id,
+    revision: updated.body.revision,
+    identifier: "356000000",
+    activityDescription:
+      "Distribution de courrier et colis, services postaux et logistique du dernier kilomètre.",
+    maxNotices: 4,
+    maxCalls: 3,
+    maxResults: 5,
+  });
+  assert.equal(refreshed.status, 200);
+  assert.equal(refreshed.body.data.delta.analyzed, 0);
+  assert.equal(refreshed.body.data.delta.reused, 3);
+  assert.equal(refreshed.body.data.delta.outcomesPreserved, 1);
+  assert.equal(
+    refreshed.body.data.opportunities[0].operatorOutcome.stage,
+    "bid",
+  );
+  const workspace = (await call("workspace")).body;
+  assert.equal(workspace.marketRadars[0].id, refreshed.body.id);
+  assert.equal(workspace.marketRadars.length, 1);
+  const digest = await fetch(
+    `http://127.0.0.1:${app.server.address().port}/api/radar/digest`,
+    {
+      method: "POST",
+      headers: {
+        authorization: "Bearer " + token,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({ id: created.body.id }),
+      signal: AbortSignal.timeout(10_000),
+    },
+  );
+  assert.match(await digest.text(), /boamp\.fr/);
+});
 test("civic product persists sourced scans, separate operator review and an evidence-linked digest", async (t) => {
   const { call, app } = await host(t);
   const created = await call("civic/scan", {

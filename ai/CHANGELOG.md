@@ -2,6 +2,19 @@
 
 This file records the purpose and technical decisions behind agent-authored changes.
 
+## 2026-10-04 — v0.9.0 Marchés Radar
+
+- Recentered the default product on a SIRET-to-opportunity workflow: official company resolution, a 100-notice BOAMP
+  window, deterministic hard gates, candidate ranking, bounded Jev fit evaluation and a five-action inbox.
+- Reused tagged `jev-marches` v0.3.4 for the versioned `pursue` / `investigate` / `ignore` policy, probability-mass
+  calibration, source fingerprints, deferred-notice accounting and reusable assessments.
+- Added the `jev-france radar` CLI, importable `./radar` module, authenticated persisted API and primary browser view.
+  Commercial outcomes remain separate as reviewed, qualified, bid, won, lost or dismissed.
+- Added safe incremental refresh: unchanged policy, profile and source fingerprints reuse model judgments and operator
+  outcomes with zero calls; changed windows can be rescored under the explicit budget.
+- Verified 53 module/API tests, nine Chromium journeys, packaging and zero high-severity dependency findings. A live
+  three-call BOAMP/Jev smoke used 2,673 input tokens; its immediate unchanged refresh used zero calls and zero tokens.
+
 ## 2026-10-04 — v0.8.0 portfolio watch and persistent quick trials
 
 - Added `jev-france portfolio`, a 1–20 company civic workflow with a manifest, aggregate Markdown/JSON output,

@@ -1,7 +1,7 @@
 {
   "name": "@gbesse/decision-workbench",
-  "version": "0.8.0",
-  "description": "Turn sourced documents into evaluated, human-reviewed and exportable Jev decisions, including a French company public-watch workflow.",
+  "version": "0.9.0",
+  "description": "Turn a French company profile and official BOAMP notices into a bounded, evidence-linked opportunity inbox.",
   "type": "module",
   "license": "MIT",
   "engines": {
@@ -17,7 +17,8 @@
     "./storage": "./packages/core/store.mjs",
     "./apps": "./packages/apps/server.mjs",
     "./review": "./packages/review/index.mjs",
-    "./civic": "./packages/civic/index.mjs"
+    "./civic": "./packages/civic/index.mjs",
+    "./radar": "./packages/radar/index.mjs"
   },
   "bin": {
     "decision-workbench": "./scripts/cli.mjs",
@@ -39,7 +40,7 @@
     "@gbesse/agent-capsule": "git+https://github.com/gbesse/agent-capsule.git#6f62c52faa3844a8a96f749a7f6dbeae36a5b84e",
     "@gbesse/decisionpacks": "github:gbesse/decisionpacks#v0.2.0",
     "@gbesse/jev-hemicycle": "github:gbesse/jev-hemicycle#v0.2.0",
-    "@gbesse/jev-marches": "github:gbesse/jev-marches#v0.2.1",
+    "@gbesse/jev-marches": "github:gbesse/jev-marches#v0.3.4",
     "@gbesse/question-forge": "git+https://github.com/gbesse/question-forge.git#0754a0c4bc0baa10e1f34bf7311d0d1020f81a09",
     "ajv": "8.20.0",
     "csv-parse": "7.0.2",

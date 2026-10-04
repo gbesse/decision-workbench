@@ -1,17 +1,18 @@
 # Decision Workbench
 
-**From a sourced document to a reviewed, exportable Jev decision.**
+**Du SIRET à cinq marchés publics réellement actionnables.**
 
 [![Verify](https://github.com/gbesse/decision-workbench/actions/workflows/verify.yml/badge.svg)](https://github.com/gbesse/decision-workbench/actions/workflows/verify.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-Decision Workbench is a local product for importing evidence, evaluating a versioned decision, preserving the model
-output, recording a separate human review and exporting the result. Its first complete vertical workflow monitors
-French public information for a company identified by SIREN or SIRET.
+Decision Workbench is the local, open-source home of **Marchés Radar**. Starting from a French SIREN or SIRET, it loads
+a bounded BOAMP window, applies deterministic commercial constraints before inference, and produces an evidence-linked
+`pursue` / `investigate` / `ignore` inbox. Operator outcomes remain separate from Jev output and close the loop from
+qualification to bid, win, loss or dismissal.
 
-![Company watch with sourced parliamentary signals](docs/workbench-civic.png)
+![Marchés Radar with sourced BOAMP opportunities](docs/workbench-radar.png)
 
-**v0.8.0 · Node.js 24+ · MIT · independent of TypeSafe.** The browser UI is French. Jev inference is a separate paid
+**v0.9.0 · Node.js 24+ · MIT · independent of TypeSafe.** The browser UI is French. Jev inference is a separate paid
 TypeSafe service; this project does not redistribute model weights.
 
 ## Try the complete product offline
@@ -23,24 +24,27 @@ npm ci --ignore-scripts
 npm start -- --demo
 ```
 
-Open the private localhost link, choose **Préremplir La Poste**, then **Analyser la veille publique**. The offline
-example resolves a company profile, evaluates sourced parliamentary and procurement fixtures, lets you confirm or
-dismiss a signal and exports a Markdown digest. It makes no network or Jev call and is not an accuracy demonstration.
+Open the private localhost link, choose **Préremplir La Poste**, then **Créer le radar**. The offline example resolves a
+company profile, evaluates four explicit BOAMP fixtures, lets you record the commercial outcome and exports a Markdown
+brief. It makes no network or Jev call and is not an accuracy demonstration.
 
-The same complete civic path is available without the browser:
+The same complete product path is available without the browser:
 
 ```sh
-./scripts/cli.mjs impact --demo
+./scripts/cli.mjs radar --demo
 # Live after setting TYPESAFE_API_KEY:
-./scripts/cli.mjs impact --siret 356000000 \
+./scripts/cli.mjs radar --siret 356000000 \
   --activity "Services postaux, colis et logistique du dernier kilomètre" \
-  --depuis 2026-09-01 --limit 10
+  --limit 20 --max-calls 10 --max-results 5 \
+  --departments 75,92 --contract-types SERVICES
 ```
 
 The installed command names are `decision-workbench` and `jev-france`, so the live form is also
-`jev-france impact --siret …`. Markdown is written to stdout by default; `--format json`, `--output` and a private
-`--checkpoint` file support machine-readable and incremental runs. Output files are created with mode 600 and are not
-silently overwritten.
+`jev-france radar --siret …`. Markdown is written to stdout by default; `--format json` and `--output` support
+machine-readable runs. Output files are created with mode 600 and are not silently overwritten.
+
+The broader civic watch remains available under **Veille civique** and through `jev-france impact`. Multi-company
+monitoring remains available with `jev-france portfolio`; these workflows are now secondary to the opportunity inbox.
 
 For several companies, use one manifest and one global worst-case budget:
 
@@ -58,10 +62,12 @@ For the real workflow:
 TYPESAFE_API_KEY=... npm start
 ```
 
-The server fetches the public company profile, the official Assembly feed and current BOAMP procurement notices, then
-makes one paid Jev request per selected new or changed signal. An incremental refresh reuses unchanged judgments and
-their human reviews, so it makes no paid call when the source window is unchanged. The key stays server-side. Each scan
-is limited to 20 signals and every source call has a deadline.
+The server fetches the public company profile and current BOAMP procurement notices, then applies deadline, lead-time,
+CPV, geography, contract-type, buyer and amount gates before any paid request. A deterministic candidate ranker spends
+the capped budget on the closest eligible notices; unevaluated notices remain counted but never fill the action list.
+An unchanged refresh reuses source-fingerprinted assessments and commercial outcomes without another paid call. A
+failed provider call becomes an explicit investigation instead of aborting the batch. The key stays server-side;
+sources and decisions remain in the local SQLite workspace.
 
 ## Un résumé de veille prêt à partager · A concise watch brief · Un resumen de vigilancia
 
@@ -71,15 +77,15 @@ is limited to 20 signals and every source call has a deadline.
 
 `npm run demo:brief` genera un JSON breve a partir de las mismas fuentes y decisiones cívicas **sintéticas**. Conserva los recuentos y enlaces de origen para mostrar lo que podría presentar una integración. No es una vigilancia real ni una medición de calidad.
 
-## One workflow, two entries
+## One spine, three entries
 
-| Stage    | Company watch                                     | Your own documents                             |
-| -------- | ------------------------------------------------- | ---------------------------------------------- |
-| Source   | Annuaire + Assemblée nationale + BOAMP            | CSV, JSON, text, HTML, email or textual PDF    |
-| State    | Company profile + declared activity + publication | Explicit field mapping with evidence pointers  |
-| Decision | Impact via `jev-hemicycle`; fit via `jev-marches` | Versioned DecisionPack                         |
-| Review   | Confirm, dismiss or keep pending                  | Correct a row without overwriting model output |
-| Export   | Evidence-linked Markdown digest                   | CSV, JSON, DecisionPack or evaluation dataset  |
+| Stage    | Marchés Radar                          | Civic watch                       | Your own documents                             |
+| -------- | -------------------------------------- | --------------------------------- | ---------------------------------------------- |
+| Source   | Annuaire + BOAMP                       | Annuaire + Parliament + BOAMP     | CSV, JSON, text, HTML, email or textual PDF    |
+| State    | Capabilities + hard constraints        | Company + declared activity       | Explicit field mapping with evidence pointers  |
+| Decision | Pursue / investigate / ignore          | Relevant / irrelevant / uncertain | Versioned DecisionPack                         |
+| Review   | Qualified / bid / won / lost / dismiss | Confirm / dismiss / pending       | Correct a row without overwriting model output |
+| Export   | Evidence-linked opportunity brief      | Evidence-linked watch digest      | CSV, JSON, DecisionPack or evaluation dataset  |
 
 This is the product spine. The Atelier includes the direct Postman-like gesture: paste a JSON state, choose a
 DecisionPack, run one evaluation and inspect the unchanged probabilities and decision trace. Recent trials persist
@@ -117,9 +123,9 @@ const { state, evidence } = mapState(source, "1", {
 });
 ```
 
-Importable modules include `./civic`, `./statebridge`, `./review`, `./sheets`, `./ui`, `./agent`, `./plugins`, `./apps`
+Importable modules include `./radar`, `./civic`, `./statebridge`, `./review`, `./sheets`, `./ui`, `./agent`, `./plugins`, `./apps`
 and `./storage`. Install the tagged repository with
-`npm install --ignore-scripts github:gbesse/decision-workbench#v0.8.0`.
+`npm install --ignore-scripts github:gbesse/decision-workbench#v0.9.0`.
 
 ## Operate and verify
 
@@ -140,11 +146,12 @@ npm run test:browser
 `npm run test:live` makes at most six paid Jev calls using fictional generic examples. `npm run test:civic:live`
 resolves a real public profile, fetches the live Assembly feed and makes exactly three paid calls. Neither runs in CI.
 
-There is no build step. Default verification covers 44 module/API tests and eight Chromium journeys. This remains a
+There is no build step. Default verification covers the module/API suite and Chromium journeys. This remains a
 single-operator localhost application: no accounts, hosted deployment, OCR, scheduler, automatic email or legal advice.
 
 ## Documentation
 
+- [Marchés Radar](docs/market-radar.md)
 - [Company public watch](docs/civic-watch.md)
 - [Verification scope](docs/verification.md)
 - [JSON API](docs/api.md)

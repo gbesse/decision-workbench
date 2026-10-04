@@ -4,6 +4,12 @@ This document describes the alpha's execution boundaries, stored data and recove
 
 ```mermaid
 flowchart LR
+    R[SIREN / SIRET] --> P[Official company profile]
+    O[BOAMP notices] --> Q[Deterministic constraints]
+    P --> Q
+    Q --> M[Jev semantic fit]
+    M --> N[Pursue / investigate / ignore]
+    N --> Y[Operator outcome]
     A[CSV / JSON / text / HTML / email / PDF] --> B[StateBridge records + source references]
     B --> C[Explicit typed mapping]
     C --> D[Versioned DecisionPack]
@@ -18,7 +24,7 @@ flowchart LR
 
 ## Responsibilities
 
-`packages/studio` serves static browser assets and the authenticated API. `statebridge`, `sheets`, `ui`, `agent` and `plugins` expose independent ESM entrypoints. `core` owns JSON validation, deadlines, a SQLite object store, and the workspace lease. The browser uses the API rather than importing server code.
+`packages/studio` serves static browser assets and the authenticated API. `radar` composes the company registry, BOAMP and the tagged `jev-marches` policy. `statebridge`, `sheets`, `ui`, `agent` and `plugins` expose independent ESM entrypoints. `core` owns JSON validation, deadlines, a SQLite object store, and the workspace lease. The browser uses the API rather than importing server code.
 
 A DecisionPack carries its own model pin, input types, questions, rules and fallback. The workspace wraps each object with `{id, revision, updated, data}`. Writes compare the expected revision in a SQLite transaction; stale edits receive HTTP 409. Semantic policy versions cannot be rebound to different content. Jobs snapshot their policy and mapping when they start.
 
@@ -37,6 +43,7 @@ New workspace directories use mode 0700; existing directory permissions are not 
 - One workspace server, up to eight concurrent API handlers, two active batches.
 - Sources: 3 MB, 500 records, 100 KB per record; structured imports have at most 50 fields. PDFs: at most 40 pages.
 - Batch: up to 100 selected rows with an explicit maximum-call budget; sequential provider requests.
+- Marchés Radar: up to 100 BOAMP notices, 100 provider calls and 20 presented opportunities; deterministic rejects consume no provider call.
 - Experiments: at most 100 predictions and a 90-second overall deadline.
 - Default provider call deadline: 30 seconds. Extraction worker: 20 seconds. Interactive plugin test: 10 seconds.
 - Plugin execution: at most 60 seconds, 128 MB old-generation JS heap; 5 MB JSON input and 6 MB JSON output. The heap cap is not a total process memory cap.
