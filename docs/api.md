@@ -8,7 +8,7 @@ Objects use `{id, revision, updated, data}`. Supply the current revision on poli
 
 | Method | Path                   | Body / purpose                                                                                       |
 | ------ | ---------------------- | ---------------------------------------------------------------------------------------------------- |
-| GET    | `/api/workspace`       | Mode, policies, source metadata, recent jobs, runs, plugins, experiments                             |
+| GET    | `/api/workspace`       | Mode, policies, sources, recent decisions, jobs, runs, plugins, experiments and civic watches        |
 | GET    | `/api/example`         | Synthetic four-row CSV and sample policy                                                             |
 | GET    | `/api/document/:id`    | Complete extracted document                                                                          |
 | GET    | `/api/job/:id`         | Batch state and saved row results                                                                    |
@@ -18,7 +18,7 @@ Objects use `{id, revision, updated, data}`. Supply the current revision on poli
 | POST   | `/api/import`          | `{name, format, content, encoding?}`; `encoding: "base64"` for PDF                                   |
 | POST   | `/api/map`             | `{documentId, rowId, mapping}`                                                                       |
 | POST   | `/api/pack`            | `{id, revision, pack}`; creation uses revision 0                                                     |
-| POST   | `/api/evaluate`        | `{packId, state}`; one saved decision                                                                |
+| POST   | `/api/evaluate`        | `{packId, state}`; one saved decision returned later in `/api/workspace`                             |
 | POST   | `/api/jobs`            | `{documentId, packId, mapping, rowIds, maxCalls}`                                                    |
 | POST   | `/api/jobs/cancel`     | `{id}`; request cancellation                                                                         |
 | POST   | `/api/review`          | `{jobId, revision, rowId, outcome, note?}`; completed successful row only                            |

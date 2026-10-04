@@ -11,7 +11,7 @@ French public information for a company identified by SIREN or SIRET.
 
 ![Company watch with sourced parliamentary signals](docs/workbench-civic.png)
 
-**v0.7.0 · Node.js 24+ · MIT · independent of TypeSafe.** The browser UI is French. Jev inference is a separate paid
+**v0.8.0 · Node.js 24+ · MIT · independent of TypeSafe.** The browser UI is French. Jev inference is a separate paid
 TypeSafe service; this project does not redistribute model weights.
 
 ## Try the complete product offline
@@ -42,6 +42,16 @@ The installed command names are `decision-workbench` and `jev-france`, so the li
 `--checkpoint` file support machine-readable and incremental runs. Output files are created with mode 600 and are not
 silently overwritten.
 
+For several companies, use one manifest and one global worst-case budget:
+
+```sh
+jev-france portfolio --demo --input examples/civic-portfolio.json --max-calls 6
+# Remove --demo for official sources and Jev; add --checkpoint .local/portfolio.json for incremental runs.
+```
+
+Every company declares its own `maxDocuments`, while `--max-calls` caps their sum before any source or provider call.
+The JSON or Markdown result aggregates usage and retains each complete evidence-linked watch.
+
 For the real workflow:
 
 ```sh
@@ -71,8 +81,9 @@ is limited to 20 signals and every source call has a deadline.
 | Review   | Confirm, dismiss or keep pending                  | Correct a row without overwriting model output |
 | Export   | Evidence-linked Markdown digest                   | CSV, JSON, DecisionPack or evaluation dataset  |
 
-This is the product spine. The Atelier now includes the direct Postman-like gesture: paste a JSON state, choose a
-DecisionPack, run one evaluation and inspect the unchanged probabilities and decision trace. Policy authoring,
+This is the product spine. The Atelier includes the direct Postman-like gesture: paste a JSON state, choose a
+DecisionPack, run one evaluation and inspect the unchanged probabilities and decision trace. Recent trials persist
+across reloads and can be reopened or exported. Policy authoring,
 question comparison, generated forms, reviewed JSON actions and trusted plugins remain available as advanced tools,
 but they all serve the same source → decision → review → export lifecycle.
 
@@ -108,7 +119,7 @@ const { state, evidence } = mapState(source, "1", {
 
 Importable modules include `./civic`, `./statebridge`, `./review`, `./sheets`, `./ui`, `./agent`, `./plugins`, `./apps`
 and `./storage`. Install the tagged repository with
-`npm install --ignore-scripts github:gbesse/decision-workbench#v0.7.0`.
+`npm install --ignore-scripts github:gbesse/decision-workbench#v0.8.0`.
 
 ## Operate and verify
 

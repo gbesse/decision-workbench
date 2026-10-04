@@ -1,6 +1,6 @@
 {
   "name": "@gbesse/decision-workbench",
-  "version": "0.7.1",
+  "version": "0.8.0",
   "description": "Turn sourced documents into evaluated, human-reviewed and exportable Jev decisions, including a French company public-watch workflow.",
   "type": "module",
   "license": "MIT",

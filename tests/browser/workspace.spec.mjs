@@ -151,6 +151,14 @@ test("policy authoring and question comparison are available without a SDK", asy
   await expect(
     page.getByText("Probabilités et trace", { exact: true }),
   ).toBeVisible();
+  await page.reload();
+  await page.getByRole("button", { name: "Atelier", exact: true }).click();
+  await page.locator("#pack-select").selectOption("browser-policy");
+  await expect(
+    page.locator('button[data-action="open-quick-decision"]'),
+  ).toHaveCount(1);
+  await page.locator('button[data-action="open-quick-decision"]').click();
+  await expect(page.getByText("Décision :")).toContainText("billing");
   await page.getByLabel("Version", { exact: true }).fill("0.2.0");
   await page.getByLabel("Probabilité minimale").fill("0.99");
   await page

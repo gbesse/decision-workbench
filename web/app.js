@@ -140,6 +140,17 @@ function listRow({
 }
 async function refresh() {
   state.workspace = await api("workspace");
+  if (state.quickDecision) {
+    state.quickDecision =
+      state.workspace.decisions.find(
+        (decision) => decision.id === state.quickDecision.id,
+      ) ?? state.quickDecision;
+  } else {
+    state.quickDecision =
+      state.workspace.decisions.find(
+        (decision) => decision.data.packId === state.packId,
+      ) ?? null;
+  }
   if (state.civicWatch) {
     state.civicWatch =
       state.workspace.civicWatches.find(
@@ -289,23 +300,43 @@ function studioView() {
     pack = current.data,
     q = Object.values(pack.questions)[0],
     threshold = pack.rules[0]?.all.find((v) => v.op === "gte")?.value ?? 0.9,
-    quickState = Object.fromEntries(
-      Object.entries(pack.inputs).map(([name, type]) => [
-        name,
-        type === "boolean"
-          ? false
-          : type === "number"
-            ? 0
-            : name === "text"
-              ? "I was charged twice for my subscription."
-              : "example",
-      ]),
-    );
+    quickState =
+      state.quickDecision?.data.state ??
+      Object.fromEntries(
+        Object.entries(pack.inputs).map(([name, type]) => [
+          name,
+          type === "boolean"
+            ? false
+            : type === "number"
+              ? 0
+              : name === "text"
+                ? "I was charged twice for my subscription."
+                : "example",
+        ]),
+      );
+  const recentDecisions = state.workspace.decisions.filter(
+    (decision) => decision.data.packId === current.id,
+  );
   return `<div class="grid"><div><section class="panel"><div class="panel-head"><h2>Politique de décision</h2><span class="badge">DecisionPacks v1</span></div><label>Politique<select id="pack-select">${packOptions()}</select></label><div class="actions"><button data-action="new-pack">Nouvelle politique</button></div><form id="policy-form"><div class="field-row"><label>Nom<input name="name" value="${escape(pack.name)}" required></label><label>Version<input name="version" value="${escape(pack.version)}" required pattern="[0-9]+\\.[0-9]+\\.[0-9]+"></label></div><label>Question<textarea name="instructions" required>${escape(q.instructions)}</textarea></label><label>Choix · un identifiant et sa description par ligne<textarea class="editor" name="criteria" required>${escape(
     Object.entries(q.criteria ?? {})
       .map(([k, v]) => k + " | " + v)
       .join("\n"),
-  )}</textarea></label><div class="field-row"><label>Probabilité minimale<input name="threshold" type="number" min="0" max="1" step="0.01" value="${threshold}"></label><label>Modèle épinglé<input name="model" value="${escape(pack.model)}" required></label></div><p>Éditeur simple : une question Choice sur le champ <code>text</code>. Les décisions sous le seuil partent en revue. Modifiez la version avant d’enregistrer un changement.</p><div class="actions"><button class="primary">Enregistrer la politique</button><button type="button" data-action="export-pack">Exporter le pack ↓</button></div></form><details><summary class="muted">Contrat JSON complet</summary><label>DecisionPack<textarea id="pack-json" class="editor">${escape(json(pack))}</textarea></label><button data-action="save-json-pack">Enregistrer le JSON</button></details></section><section class="panel"><div class="panel-head"><h2>Comparer des questions</h2><span class="badge">Question Forge</span></div><p>Les formulations sont comparées sur un jeu de développement. Le gagnant est ensuite évalué sur des exemples distincts. Maximum : 100 prédictions.</p><details><summary>Configurer une expérience</summary><label>Expérience JSON<textarea id="experiment-spec" class="editor">${escape(json(experimentExample()))}</textarea></label><button data-action="experiment" class="primary">Lancer la comparaison</button></details></section></div><div><section class="panel"><div class="panel-head"><h2>Essai rapide</h2><span class="badge">1 appel Jev</span></div><form id="quick-decision-form"><label>État JSON<textarea name="state" class="editor" required>${escape(json(quickState))}</textarea></label><button class="primary">Évaluer cet état</button></form>${state.quickDecision ? `<div class="inline-result">Décision : <strong>${escape(state.quickDecision.data.record.outcome)}</strong></div><details open><summary>Probabilités et trace</summary>${pretty(state.quickDecision.data.record)}</details>` : ""}<p>Le JSON est validé contre les entrées du DecisionPack sélectionné. La réponse brute et les probabilités restent inspectables.</p></section><section class="panel"><div class="panel-head"><h2>Un même contrat, six modules</h2></div><div class="flow"><span>Source</span>→<span>État</span>→<span>Politique</span>→<span>Décision</span></div>${[
+  )}</textarea></label><div class="field-row"><label>Probabilité minimale<input name="threshold" type="number" min="0" max="1" step="0.01" value="${threshold}"></label><label>Modèle épinglé<input name="model" value="${escape(pack.model)}" required></label></div><p>Éditeur simple : une question Choice sur le champ <code>text</code>. Les décisions sous le seuil partent en revue. Modifiez la version avant d’enregistrer un changement.</p><div class="actions"><button class="primary">Enregistrer la politique</button><button type="button" data-action="export-pack">Exporter le pack ↓</button></div></form><details><summary class="muted">Contrat JSON complet</summary><label>DecisionPack<textarea id="pack-json" class="editor">${escape(json(pack))}</textarea></label><button data-action="save-json-pack">Enregistrer le JSON</button></details></section><section class="panel"><div class="panel-head"><h2>Comparer des questions</h2><span class="badge">Question Forge</span></div><p>Les formulations sont comparées sur un jeu de développement. Le gagnant est ensuite évalué sur des exemples distincts. Maximum : 100 prédictions.</p><details><summary>Configurer une expérience</summary><label>Expérience JSON<textarea id="experiment-spec" class="editor">${escape(json(experimentExample()))}</textarea></label><button data-action="experiment" class="primary">Lancer la comparaison</button></details></section></div><div><section class="panel"><div class="panel-head"><h2>Essai rapide</h2><span class="badge">1 appel Jev</span></div><form id="quick-decision-form"><label>État JSON<textarea name="state" class="editor" required>${escape(json(quickState))}</textarea></label><button class="primary">Évaluer cet état</button></form>${state.quickDecision ? `<div class="inline-result">Décision : <strong>${escape(state.quickDecision.data.record.outcome)}</strong></div><details open><summary>Probabilités et trace</summary>${pretty(state.quickDecision.data.record)}</details><button data-action="export-quick-decision">Exporter cette décision ↓</button>` : ""}<p>Le JSON est validé contre les entrées du DecisionPack sélectionné. La réponse brute et les probabilités restent inspectables.</p>${list(
+    "Essais récents",
+    recentDecisions.map((decision) =>
+      listRow({
+        action: "open-quick-decision",
+        id: decision.id,
+        title: decision.data.record.outcome,
+        subtitle:
+          decision.data.record.pack?.version ??
+          decision.data.record.model ??
+          "Décision Jev",
+        date: decision.updated,
+        icon: "◆",
+      }),
+    ),
+  )}</section><section class="panel"><div class="panel-head"><h2>Un même contrat, six modules</h2></div><div class="flow"><span>Source</span>→<span>État</span>→<span>Politique</span>→<span>Décision</span></div>${[
     [
       "Importer une source",
       "CSV, JSON, texte, HTML, email simple ou PDF textuel.",
@@ -710,6 +741,14 @@ const actions = {
     ),
   "export-pack": () =>
     download("decision-pack.json", json(selectedPack().data)),
+  "open-quick-decision": (button) => {
+    state.quickDecision = state.workspace.decisions.find(
+      (decision) => decision.id === button.dataset.id,
+    );
+    render();
+  },
+  "export-quick-decision": () =>
+    download("decision.json", json(state.quickDecision)),
   "save-json-pack": async () => {
     const current = selectedPack();
     await api("pack", {
@@ -1034,6 +1073,7 @@ document.addEventListener("submit", (event) => {
         packId: state.packId,
         state: JSON.parse(data.get("state")),
       });
+      await refresh();
       render();
       notice(
         "Décision exécutée ; probabilités et trace conservées.",

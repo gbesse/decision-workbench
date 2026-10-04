@@ -324,6 +324,7 @@ export async function createWorkbench({
               },
             })),
           runs: store.list("run").slice(0, 30),
+          decisions: store.list("decision").slice(0, 30),
           plugins: registry.list(),
           experiments: store.list("experiment").slice(0, 10),
           civicWatches: store.list("civic-watch").slice(0, 20),
@@ -531,7 +532,15 @@ export async function createWorkbench({
           provider: actualProvider,
           timeoutMs,
         });
-        send(200, store.create("decision", { state, record: decision, mode }));
+        send(
+          200,
+          store.create("decision", {
+            packId: pack.id,
+            state,
+            record: decision,
+            mode,
+          }),
+        );
         return;
       }
       if (req.method === "POST" && path === "/api/jobs") {

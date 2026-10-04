@@ -6,8 +6,10 @@ import {
   fetchCivicDocuments,
   fetchParliamentaryDocuments,
   scanCivicWatch,
+  scanCivicPortfolio,
   reviewCivicSignal,
   renderCivicDigest,
+  renderCivicPortfolioDigest,
 } from "../packages/civic/index.mjs";
 import {
   demoCompanyResolver,
@@ -278,4 +280,77 @@ test("a changed source is rescored with hysteresis and its stale review is clear
   assert.equal(refreshed.delta.analyzed, 1);
   assert.equal(refreshed.delta.reused, 1);
   assert.equal(refreshed.signals[0].operatorReview, null);
+});
+
+test("runs a multi-company portfolio only when its worst case fits the global budget", async () => {
+  const companies = [
+    {
+      identifier: "356000000",
+      activityDescription: "Distribution de courrier et colis en France",
+      maxDocuments: 2,
+    },
+    {
+      identifier: "552100554",
+      activityDescription: "Transport de voyageurs et services de mobilité",
+      maxDocuments: 2,
+    },
+  ];
+  await assert.rejects(
+    scanCivicPortfolio(companies, {
+      maxCalls: 3,
+      provider: syntheticProvider,
+      companyResolver: demoCompanyResolver,
+      documentResolver: demoDocumentResolver,
+    }),
+    /au-dessus du budget global de 3/,
+  );
+  const portfolio = await scanCivicPortfolio(companies, {
+    maxCalls: 4,
+    provider: syntheticProvider,
+    companyResolver: demoCompanyResolver,
+    documentResolver: demoDocumentResolver,
+  });
+  assert.deepEqual(portfolio.budget, {
+    maxCalls: 4,
+    requestedCalls: 4,
+    usedCalls: 4,
+  });
+  assert.equal(portfolio.counts.companies, 2);
+  assert.equal(portfolio.counts.signals, 4);
+  assert.equal(portfolio.watches[1].company.siren, "552100554");
+  assert.match(renderCivicPortfolioDigest(portfolio), /Budget Jev : 4\/4/);
+});
+
+test("reuses every unchanged portfolio signal without a new provider call", async () => {
+  const companies = [
+    {
+      identifier: "356000000",
+      activityDescription: "Distribution de courrier et colis en France",
+      maxDocuments: 2,
+    },
+    {
+      identifier: "552100554",
+      activityDescription: "Transport de voyageurs et services de mobilité",
+      maxDocuments: 2,
+    },
+  ];
+  let calls = 0;
+  const options = {
+    maxCalls: 4,
+    provider: async (request) => {
+      calls++;
+      return syntheticProvider(request);
+    },
+    companyResolver: demoCompanyResolver,
+    documentResolver: demoDocumentResolver,
+  };
+  const first = await scanCivicPortfolio(companies, options);
+  const second = await scanCivicPortfolio(companies, {
+    ...options,
+    previousPortfolio: first,
+  });
+  assert.equal(calls, 4);
+  assert.equal(second.usage.requests, 0);
+  assert.equal(second.watches[0].delta.reused, 2);
+  assert.equal(second.watches[1].delta.reused, 2);
 });

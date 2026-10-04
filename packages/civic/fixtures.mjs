@@ -52,7 +52,19 @@ export const demoCivicDocuments = [
   },
 ];
 
-export const demoCompanyResolver = async () =>
-  structuredClone(demoCivicCompany);
+export const demoCompanyResolver = async (identifier = "356000000") => {
+  const company = structuredClone(demoCivicCompany);
+  const normalized = String(identifier).replace(/\s/g, "");
+  if (normalized === "356000000") return company;
+  const siren = normalized.slice(0, 9);
+  return {
+    ...company,
+    identifier: normalized,
+    siren,
+    siret: `${siren}00001`,
+    name: `ENTREPRISE DÉMO ${siren}`,
+    sourceUrl: `https://annuaire-entreprises.data.gouv.fr/entreprise/${siren}`,
+  };
+};
 export const demoDocumentResolver = async ({ limit = 20 } = {}) =>
   structuredClone(demoCivicDocuments.slice(0, limit));

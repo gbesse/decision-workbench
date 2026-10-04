@@ -2,6 +2,16 @@
 
 This file records the purpose and technical decisions behind agent-authored changes.
 
+## 2026-10-04 — v0.8.0 portfolio watch and persistent quick trials
+
+- Added `jev-france portfolio`, a 1–20 company civic workflow with a manifest, aggregate Markdown/JSON output,
+  atomic private checkpoints and one explicit worst-case Jev-call budget validated before execution.
+- Reused the same Annuaire, Hémicycle, Marchés, fingerprint and digest pipeline for every company; unchanged
+  portfolio refreshes reuse each saved signal and make zero provider calls.
+- Made Atelier quick decisions part of the persisted workspace. Recent trials now survive reloads, reopen with their
+  original input, probabilities and trace, and export as JSON.
+- Added offline module, CLI, API and browser regressions; no default test calls public sources or a paid model.
+
 ## 2026-09-30 — v0.7.0 direct civic and DecisionPack gestures
 
 - Added the installable `jev-france impact`/`decision-workbench impact` command, reusing the same Annuaire,
