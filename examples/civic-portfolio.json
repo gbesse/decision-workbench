@@ -1,0 +1,14 @@
+[
+  {
+    "identifier": "356000000",
+    "activityDescription": "Distribution de courrier et colis, services postaux et logistique du dernier kilomètre.",
+    "maxDocuments": 3,
+    "since": "2026-09-18"
+  },
+  {
+    "identifier": "552100554",
+    "activityDescription": "Transport de voyageurs, exploitation de réseaux et services de mobilité.",
+    "maxDocuments": 3,
+    "since": "2026-09-18"
+  }
+]

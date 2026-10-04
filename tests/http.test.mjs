@@ -97,6 +97,18 @@ test("civic product persists sourced scans, separate operator review and an evid
   );
   assert.match(await digest.text(), /assemblee-nationale\.fr/);
 });
+test("quick decisions are returned by the workspace after evaluation", async (t) => {
+  const { call } = await host(t);
+  const decision = await call("evaluate", {
+    packId: "support-triage",
+    state: { text: "I was charged twice" },
+  });
+  assert.equal(decision.status, 200);
+  assert.equal(decision.body.data.packId, "support-triage");
+  const workspace = (await call("workspace")).body;
+  assert.equal(workspace.decisions[0].id, decision.body.id);
+  assert.equal(workspace.decisions[0].data.record.outcome, "billing");
+});
 test("complete import → batch → human correction → rule replay remains durable and traceable", async (t) => {
   const { call, app } = await host(t);
   const doc = (

@@ -33,6 +33,11 @@ The installable `jev-france impact` command calls this same implementation; it i
 checkpoint. The checkpoint preserves the exact prior judgments so an unchanged refresh makes no paid calls. `--demo`
 uses only checked-in fixtures and synthetic decisions.
 
+`jev-france portfolio --input companies.json --max-calls N` runs 1–20 company watches from one JSON manifest. The
+sum of every `maxDocuments` must fit `N` before execution starts, so the operator approves one explicit worst-case
+Jev-call budget. A private checkpoint retains the complete prior portfolio; unchanged signals are reused independently
+for each company. JSON output includes requested, maximum and actually used calls plus aggregate signal counts.
+
 ## Verification
 
 `npm run test:civic:live` resolves La Poste, merges three current official signals from Assembly and BOAMP, makes at

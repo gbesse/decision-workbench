@@ -375,6 +375,110 @@ export async function scanCivicWatch(
   });
 }
 
+/** Run several company watches under one explicit worst-case Jev-call budget. */
+export async function scanCivicPortfolio(
+  companies,
+  { maxCalls = 20, previousPortfolio = null, ...options } = {},
+) {
+  ensure(
+    Array.isArray(companies) && companies.length >= 1 && companies.length <= 20,
+    "Le portefeuille doit contenir entre 1 et 20 entreprises",
+  );
+  ensure(
+    Number.isInteger(maxCalls) && maxCalls >= 1 && maxCalls <= 100,
+    "Le budget global doit être un entier entre 1 et 100 appels",
+  );
+  const identifiers = companies.map((company) =>
+    cleanIdentifier(company.identifier),
+  );
+  companies.forEach((company) => {
+    ensure(
+      typeof company.activityDescription === "string" &&
+        company.activityDescription.trim().length >= 10 &&
+        company.activityDescription.length <= 2000,
+      "Chaque entreprise doit décrire son activité en 10 à 2 000 caractères",
+    );
+    ensure(
+      Number.isInteger(company.maxDocuments ?? 10) &&
+        (company.maxDocuments ?? 10) >= 1 &&
+        (company.maxDocuments ?? 10) <= 20,
+      "Chaque entreprise doit demander entre 1 et 20 signaux",
+    );
+    ensure(
+      company.since === undefined ||
+        company.since === null ||
+        validIsoDate(company.since),
+      "Chaque date de début doit suivre le format AAAA-MM-JJ",
+    );
+  });
+  ensure(
+    new Set(identifiers).size === identifiers.length,
+    "Chaque entreprise du portefeuille doit avoir un identifiant unique",
+  );
+  const requestedCalls = companies.reduce(
+    (total, company) => total + (company.maxDocuments ?? 10),
+    0,
+  );
+  ensure(
+    requestedCalls <= maxCalls,
+    `Le portefeuille peut consommer jusqu’à ${requestedCalls} appels, au-dessus du budget global de ${maxCalls}`,
+  );
+  const previous = new Map(
+    (previousPortfolio?.watches ?? []).map((watch) => [
+      watch.company.identifier,
+      watch,
+    ]),
+  );
+  const watches = [];
+  for (let index = 0; index < companies.length; index++) {
+    const company = companies[index];
+    watches.push(
+      await scanCivicWatch(
+        {
+          ...company,
+          identifier: identifiers[index],
+          previousWatch: previous.get(identifiers[index]) ?? null,
+        },
+        options,
+      ),
+    );
+  }
+  const usage = watches.reduce(
+    (total, watch) => ({
+      input_tokens: total.input_tokens + watch.usage.input_tokens,
+      output_tokens: total.output_tokens + watch.usage.output_tokens,
+      requests: total.requests + watch.usage.requests,
+    }),
+    { input_tokens: 0, output_tokens: 0, requests: 0 },
+  );
+  ensure(
+    usage.requests <= maxCalls,
+    "Le fournisseur a dépassé le budget global",
+  );
+  return snapshot({
+    schemaVersion: 1,
+    generatedAt: new Date().toISOString(),
+    budget: { maxCalls, requestedCalls, usedCalls: usage.requests },
+    counts: {
+      companies: watches.length,
+      signals: watches.reduce(
+        (total, watch) => total + watch.signals.length,
+        0,
+      ),
+      relevant: watches.reduce(
+        (total, watch) => total + watch.counts.relevant,
+        0,
+      ),
+      unknown: watches.reduce(
+        (total, watch) => total + watch.counts.unknown,
+        0,
+      ),
+    },
+    usage,
+    watches,
+  });
+}
+
 export function reviewCivicSignal(watch, { signalId, decision, note = "" }) {
   ensure(
     ["confirmed", "dismissed", "pending"].includes(decision),
@@ -441,5 +545,19 @@ export function renderCivicDigest(watch) {
     );
   });
   lines.push(`Profil officiel : ${watch.company.sourceUrl}`, "");
+  return `${lines.join("\n")}\n`;
+}
+
+export function renderCivicPortfolioDigest(portfolio) {
+  const lines = [
+    "# Veille publique · portefeuille",
+    "",
+    `${portfolio.counts.companies} entreprises · ${portfolio.counts.signals} signaux · ${portfolio.counts.relevant} pertinents · ${portfolio.counts.unknown} incertains`,
+    `Budget Jev : ${portfolio.budget.usedCalls}/${portfolio.budget.maxCalls} appels utilisés (plafond demandé : ${portfolio.budget.requestedCalls})`,
+    "",
+  ];
+  for (const watch of portfolio.watches)
+    lines.push(renderCivicDigest(watch).trim(), "", "---", "");
+  lines.splice(-2);
   return `${lines.join("\n")}\n`;
 }
