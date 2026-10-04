@@ -4,15 +4,15 @@ This document states what the release checks and what still requires a real inte
 
 The repository uses Node's test runner and Chromium through Playwright. CI runs on Linux with Node 24. There is no compilation, container construction or production build in the verification workflow.
 
-- Module tests cover SQLite compare-and-swap conflicts and recovery, source mappings and evidence, parser edge cases, strict coercion, CSV formula escaping, plugin hashes and JSON schemas, worker termination, typed form inputs, budgets, agent request identity and approved trace replay.
+- Module tests cover Marchés Radar budgets, candidate selection, incremental reuse and outcome preservation; SQLite compare-and-swap conflicts and recovery; source mappings and evidence; parser edge cases; strict coercion; CSV formula escaping; plugin hashes and JSON schemas; worker termination; typed form inputs; agent request identity and approved trace replay.
 - A local HTTP receiver verifies the real optional webhook: no call before approval, stable idempotency header, one delivery, and no second delivery during capsule replay.
 - HTTP tests cover authentication, browser-origin checks, CSP, import-to-review flows, immutable semantic versions, Question Forge wiring, explicit provider failures, non-responsive provider deadlines, and reporting of uncertain actions.
 - A generated valid PDF fixture exercises text extraction through the actual PDF plugin worker.
-- Eight Chromium journeys cover the complete company-watch and digest flow, source import, mapping, batch evaluation, correction, CSV download, plugin execution, generated forms, reviewed agent actions, mobile upload and source inspection, policy creation, question comparison, persistent visual form editing, separately approved two-step workflows and Decision Review.
+- Nine Chromium journeys cover Marchés Radar from SIRET through an outcome-preserving no-cost refresh and digest; the complete company-watch flow; source import, mapping, batch evaluation, correction, CSV download, plugin execution, generated forms, reviewed agent actions, mobile upload and source inspection, policy creation, question comparison, persistent visual form editing, separately approved two-step workflows and Decision Review.
 - `npm run check` checks maintained JavaScript syntax. `npm run typecheck` checks the UI compiler's JSDoc types only. `npm run format:check` verifies source formatting.
 - `npm run demo` composes all six modules using the explicit synthetic provider.
 
-The screenshot files in this directory are captured from browser tests with synthetic source data. They show the desktop Studio and mobile StateBridge. Browser failure traces are uploaded by CI only on a failed run.
+The screenshot files in this directory are captured from browser tests with synthetic source data. They show Marchés Radar, the desktop Studio and mobile StateBridge. Browser failure traces are uploaded by CI only on a failed run.
 
 ## Live provider check — 2026-09-21
 

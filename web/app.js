@@ -15,7 +15,7 @@ const $ = (selector) => document.querySelector(selector),
 const json = (value) => JSON.stringify(value, null, 2),
   pretty = (value) => `<pre>${escape(json(value))}</pre>`;
 const state = {
-  view: "civic",
+  view: "radar",
   workspace: null,
   packId: "support-triage",
   document: null,
@@ -26,6 +26,7 @@ const state = {
   formDraft: null,
   formPreview: null,
   quickDecision: null,
+  marketRadar: null,
   civicWatch: null,
   token: sessionStorage.getItem("workbench-token") ?? "",
 };
@@ -157,6 +158,12 @@ async function refresh() {
         (watch) => watch.id === state.civicWatch.id,
       ) ?? state.civicWatch;
   } else state.civicWatch = state.workspace.civicWatches[0] ?? null;
+  if (state.marketRadar) {
+    state.marketRadar =
+      state.workspace.marketRadars.find(
+        (radar) => radar.id === state.marketRadar.id,
+      ) ?? state.marketRadar;
+  } else state.marketRadar = state.workspace.marketRadars[0] ?? null;
   $("#login").hidden = true;
   $("#workspace").hidden = false;
   $("#connection-state").textContent = "Workspace connecté";
@@ -174,6 +181,11 @@ async function refresh() {
   render();
 }
 const viewText = {
+  radar: [
+    "DÉTECTER · QUALIFIER · APPRENDRE",
+    "Du SIRET aux marchés à poursuivre.",
+    "Analysez une fenêtre BOAMP sous budget, gardez les preuves officielles et suivez ce qui devient une offre ou un résultat.",
+  ],
   civic: [
     "IDENTIFIER · SURVEILLER · RELIRE",
     "Quels textes ou marchés peuvent toucher cette entreprise ?",
@@ -225,25 +237,25 @@ function render() {
       agents: "JSON Agents",
       plugins: "Plugins",
       studio: "Studio",
-      civic: "Veille entreprise",
+      civic: "Veille civique",
+      radar: "Marchés Radar",
     }[state.view];
-  $("#load-demo").hidden = state.view === "civic";
+  $("#load-demo").hidden = ["civic", "radar"].includes(state.view);
   document
     .querySelectorAll("[data-view]")
     .forEach((button) =>
       button.classList.toggle("active", button.dataset.view === state.view),
     );
-  const reviews = state.workspace.civicWatches.reduce(
-    (count, watch) =>
-      count +
-      watch.data.signals.filter((signal) => signal.operatorReview).length,
-    0,
-  );
+  const radarDecisions = state.workspace.marketRadars.flatMap(
+      (radar) => radar.data.decisions,
+    ),
+    pursued = radarDecisions.filter((row) => row.status === "pursue").length,
+    outcomes = radarDecisions.filter((row) => row.operatorOutcome).length;
   $("#metrics").innerHTML = [
-    ["Veilles", state.workspace.civicWatches.length, "persistées"],
-    ["Sources", state.workspace.documents.length, "importées"],
-    ["Évaluations", state.workspace.jobs.length, "par lots"],
-    ["Revues", reviews, "signaux civiques"],
+    ["Radars", state.workspace.marketRadars.length, "persistés"],
+    ["Avis", radarDecisions.length, "tracés"],
+    ["À poursuivre", pursued, "par la politique"],
+    ["Résultats", outcomes, "renseignés"],
   ]
     .map(
       ([label, value, note]) =>
@@ -251,6 +263,7 @@ function render() {
     )
     .join("");
   $("#content").innerHTML = {
+    radar: radarView,
     civic: civicView,
     studio: studioView,
     bridge: bridgeView,
@@ -259,6 +272,57 @@ function render() {
     agents: agentsView,
     plugins: pluginsView,
   }[state.view]();
+}
+const radarStatus = (status) =>
+  ({ pursue: "Poursuivre", investigate: "Investiguer", ignore: "Ignorer" })[
+    status
+  ] ?? status;
+const radarStage = (stage) =>
+  ({
+    reviewed: "Relu",
+    qualified: "Qualifié",
+    bid: "Offre déposée",
+    won: "Gagné",
+    lost: "Perdu",
+    dismissed: "Écarté",
+  })[stage] ?? "Suivre";
+const parseList = (value) => {
+  const items = String(value ?? "")
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+  return items.length ? items : undefined;
+};
+function radarView() {
+  const radar = state.marketRadar,
+    opportunities = radar?.data.opportunities ?? [];
+  return `<div class="grid"><div><section class="panel"><div class="panel-head"><h2>Nouveau radar</h2><span class="badge">BOAMP · budget borné</span></div><form id="radar-form"><div class="field-row"><label>SIREN ou SIRET<input name="identifier" inputmode="numeric" pattern="[0-9 ]{9,18}" placeholder="356 000 000" required></label><label>Avis à charger<input name="maxNotices" type="number" min="1" max="100" value="100" required></label></div><label>Produits, services et contraintes<textarea name="activityDescription" minlength="10" maxlength="2000" required placeholder="Décrivez précisément ce que l’entreprise sait livrer."></textarea></label><div class="field-row"><label>Budget Jev<input name="maxCalls" type="number" min="0" max="100" value="10" required></label><label>Actions présentées<input name="maxResults" type="number" min="1" max="20" value="5" required></label></div><div class="field-row"><label>Départements (facultatif)<input name="departments" placeholder="75, 92"></label><label>Types (facultatif)<input name="contractTypes" placeholder="SERVICES, FOURNITURES"></label></div><label>Délai minimal avant échéance<input name="minimumLeadDays" type="number" min="0" max="365" value="7" required></label><div class="actions"><button class="primary">Créer le radar</button><button type="button" data-action="prefill-radar">Préremplir La Poste</button></div></form><p>Les contraintes certaines sont appliquées avant Jev. Le score mesure l’adéquation déclarée, jamais une probabilité de gagner.</p></section>${list(
+    "Radars enregistrés",
+    state.workspace.marketRadars.map((item) =>
+      listRow({
+        action: "open-market-radar",
+        id: item.id,
+        title: item.data.company.name,
+        subtitle: `${item.data.counts.pursue} à poursuivre · ${item.data.counts.investigate} à investiguer`,
+        date: item.updated,
+        icon: "⌁",
+        badge: item.data.mode,
+      }),
+    ),
+  )}</div><div>${
+    radar
+      ? `<section class="panel"><div class="panel-head"><div><h2>${escape(radar.data.company.name)}</h2><p>SIREN ${escape(radar.data.company.siren)} · ${radar.data.sourceWindow.received} avis reçus</p></div><span class="badge">${radar.data.counts.pursue} poursuivre · ${radar.data.counts.investigate} investiguer</span></div><p>${escape(radar.data.activityDescription)}</p><div class="source-strip"><a href="${escape(radar.data.company.sourceUrl)}" target="_blank" rel="noreferrer">Profil officiel ↗</a><span>Budget Jev ${radar.data.budget.usedCalls}/${radar.data.budget.maxCalls}${radar.data.budget.reusedNotices ? ` · ${radar.data.budget.reusedNotices} réutilisés` : ""}${radar.data.budget.deferredNotices ? ` · ${radar.data.budget.deferredNotices} différés` : ""} · ${escape(radar.data.policyVersion)}</span></div>${
+          opportunities.length
+            ? `<div class="table-wrap"><table><thead><tr><th>Opportunité</th><th>Décision</th><th>Suivi</th></tr></thead><tbody>${opportunities
+                .map(
+                  (row) =>
+                    `<tr><td><a href="${escape(row.evidence.sourceUrl)}" target="_blank" rel="noreferrer">${escape(row.evidence.title)}</a><small>${escape(row.evidence.buyer ?? "Acheteur non renseigné")} · ${escape(row.evidence.deadline?.slice(0, 10) ?? "échéance inconnue")}</small></td><td><span class="badge ${row.status === "investigate" ? "warning" : ""}">${escape(radarStatus(row.status))}</span><small>${escape(row.reason)}${Number.isFinite(row.assessment.fit) ? ` · ${row.assessment.fit.toFixed(2)}/3 · masse ${(row.confidence * 100).toFixed(0)} %` : " · à analyser"}</small></td><td><button data-action="inspect-radar-opportunity" data-id="${escape(row.noticeId)}">${escape(radarStage(row.operatorOutcome?.stage))}</button></td></tr>`,
+                )
+                .join("")}</tbody></table></div>`
+            : '<div class="empty">Aucune opportunité à poursuivre ou investiguer dans cette fenêtre.</div>'
+        }<div class="actions"><button class="primary" data-action="refresh-market-radar">Actualiser le radar</button><button data-action="export-radar-digest">Exporter le radar Markdown ↓</button></div><p>${escape(radar.data.disclaimer)}</p></section>`
+      : '<section class="panel"><h2>Une inbox commerciale, pas un moteur de recherche</h2><div class="flow"><span>SIRET</span>→<span>Avis BOAMP</span>→<span>Poursuivre / investiguer</span>→<span>Offre / résultat</span></div><div class="step"><span class="step-number">1</span><div><strong>Écarter ce qui est certain</strong><p>Échéance, CPV, géographie, type et exclusions ne consomment aucun appel Jev.</p></div></div><div class="step"><span class="step-number">2</span><div><strong>Qualifier sous budget</strong><p>La politique probabiliste est versionnée ; les avis non traités restent visibles à investiguer.</p></div></div><div class="step"><span class="step-number">3</span><div><strong>Fermer la boucle</strong><p>Chaque opportunité peut être marquée qualifiée, déposée, gagnée, perdue ou écartée.</p></div></div></section>'
+  }</div></div>`;
 }
 const civicMetric = (signal) =>
   signal.metric === "fit"
@@ -642,6 +706,62 @@ async function openRun(id) {
   );
 }
 const actions = {
+  "prefill-radar": () => {
+    const form = $("#radar-form");
+    form.elements.identifier.value = "356 000 000";
+    form.elements.activityDescription.value =
+      "Distribution de courrier et de colis, services postaux, logistique du dernier kilomètre et réseau de points de contact.";
+    form.elements.maxNotices.value = "4";
+    form.elements.maxCalls.value = "3";
+    form.elements.maxResults.value = "5";
+    form.elements.departments.value = "75, 92";
+    form.elements.contractTypes.value = "SERVICES";
+  },
+  "open-market-radar": async (button) => {
+    state.marketRadar = await api("market-radar/" + button.dataset.id);
+    state.view = "radar";
+    render();
+  },
+  "inspect-radar-opportunity": (button) => {
+    const row = state.marketRadar.data.decisions.find(
+      (item) => item.noticeId === button.dataset.id,
+    );
+    detail(
+      "Opportunité de marché",
+      `<h3>${escape(row.evidence.title)}</h3><p><span class="badge">${escape(radarStatus(row.status))}</span> <a href="${escape(row.evidence.sourceUrl)}" target="_blank" rel="noreferrer">Ouvrir l’avis BOAMP ↗</a></p>${pretty({ reason: row.reason, confidence: row.confidence, assessment: row.assessment, evidence: row.evidence, operatorOutcome: row.operatorOutcome })}<form id="radar-outcome-form" data-notice="${escape(row.noticeId)}"><label>Étape commerciale<select name="stage"><option value="reviewed">Relu</option><option value="qualified">Qualifié</option><option value="bid">Offre déposée</option><option value="won">Gagné</option><option value="lost">Perdu</option><option value="dismissed">Écarté</option></select></label><label>Note<textarea name="note" maxlength="2000">${escape(row.operatorOutcome?.note ?? "")}</textarea></label><button class="primary">Enregistrer le résultat</button></form>`,
+    );
+    if (row.operatorOutcome)
+      $("#radar-outcome-form").elements.stage.value = row.operatorOutcome.stage;
+  },
+  "refresh-market-radar": async () => {
+    const current = state.marketRadar.data;
+    state.marketRadar = await api("radar/scan", {
+      radarId: state.marketRadar.id,
+      revision: state.marketRadar.revision,
+      identifier: current.company.identifier,
+      activityDescription: current.activityDescription,
+      maxNotices: current.maxNotices,
+      maxCalls: current.budget.maxCalls,
+      maxResults: current.maxResults,
+      departments: current.profile.departments,
+      contractTypes: current.profile.contractTypes,
+      cpv: current.profile.cpv,
+      excludedBuyers: current.profile.excludedBuyers,
+      minimumLeadDays: current.profile.minimumLeadDays,
+      maxEstimatedValue: current.profile.maxEstimatedValue,
+    });
+    await refresh();
+    notice(
+      `Radar actualisé : ${state.marketRadar.data.delta.analyzed} nouvel appel, ${state.marketRadar.data.delta.reused} résultat(s) réutilisé(s), ${state.marketRadar.data.delta.outcomesPreserved} suivi(s) conservé(s).`,
+      "success",
+    );
+  },
+  "export-radar-digest": async () =>
+    download(
+      `radar-${state.marketRadar.data.company.siren}.md`,
+      await api("radar/digest", { id: state.marketRadar.id }, { text: true }),
+      "text/markdown",
+    ),
   "prefill-civic": () => {
     const form = $("#civic-form");
     form.elements.identifier.value = "356 000 000";
@@ -964,6 +1084,35 @@ document.addEventListener("submit", (event) => {
       state.formPreview = null;
       await refresh();
       notice("Formulaire enregistré.", "success");
+    }
+    if (formId === "radar-form") {
+      state.marketRadar = await api("radar/scan", {
+        identifier: data.get("identifier"),
+        activityDescription: data.get("activityDescription"),
+        maxNotices: Number(data.get("maxNotices")),
+        maxCalls: Number(data.get("maxCalls")),
+        maxResults: Number(data.get("maxResults")),
+        departments: parseList(data.get("departments")),
+        contractTypes: parseList(data.get("contractTypes")),
+        minimumLeadDays: Number(data.get("minimumLeadDays")),
+      });
+      await refresh();
+      notice("Radar enregistré avec ses preuves BOAMP.", "success");
+    }
+    if (formId === "radar-outcome-form") {
+      state.marketRadar = await api("radar/outcome", {
+        id: state.marketRadar.id,
+        revision: state.marketRadar.revision,
+        noticeId: form.dataset.notice,
+        stage: data.get("stage"),
+        note: data.get("note"),
+      });
+      $("#detail").close();
+      await refresh();
+      notice(
+        "Résultat commercial enregistré séparément du score Jev.",
+        "success",
+      );
     }
     if (formId === "civic-form") {
       state.civicWatch = await api("civic/scan", {

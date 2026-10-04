@@ -1,8 +1,11 @@
 #!/usr/bin/env node
-// Purpose: Dispatch the installable Workbench and jev-france command names to the local server or one-shot civic CLI.
+// Purpose: Dispatch the installable Workbench and jev-france command names to the product CLIs or local server.
 const [command, ...args] = process.argv.slice(2);
 try {
-  if (command === "impact") {
+  if (command === "radar") {
+    const { runRadarCli } = await import("./radar.mjs");
+    await runRadarCli(args);
+  } else if (command === "impact") {
     const { runImpactCli } = await import("./impact.mjs");
     await runImpactCli(args);
   } else if (command === "portfolio") {

@@ -5,14 +5,46 @@ const open = async (page) => {
   await page.goto("/#token=browser-fixture-operator-token-24-plus");
   await expect(
     page.getByRole("heading", {
-      name: "Quels textes ou marchés peuvent toucher cette entreprise ?",
+      name: "Du SIRET aux marchés à poursuivre.",
     }),
   ).toBeVisible();
 };
+test("market radar turns a company into sourced actions and records a commercial outcome", async ({
+  page,
+}) => {
+  await open(page);
+  await page.getByRole("button", { name: "Préremplir La Poste" }).click();
+  await page.getByRole("button", { name: "Créer le radar" }).click();
+  await expect(page.getByRole("heading", { name: "LA POSTE" })).toBeVisible();
+  await expect(page.locator("tbody tr")).toHaveCount(2);
+  await expect(page.getByText("Poursuivre", { exact: true })).toBeVisible();
+  await page
+    .getByRole("button", { name: "Suivre", exact: true })
+    .first()
+    .click();
+  await page.getByLabel("Étape commerciale").selectOption("bid");
+  await page.getByLabel("Note", { exact: true }).fill("Go/no-go validé");
+  await page.getByRole("button", { name: "Enregistrer le résultat" }).click();
+  await expect(
+    page.getByRole("button", { name: "Offre déposée" }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Actualiser le radar" }).click();
+  await expect(page.getByText(/0 nouvel appel.*3 résultat/)).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Offre déposée" }),
+  ).toBeVisible();
+  await page.screenshot({ path: "docs/workbench-radar.png", fullPage: true });
+  const download = page.waitForEvent("download");
+  await page
+    .getByRole("button", { name: "Exporter le radar Markdown" })
+    .click();
+  expect((await download).suggestedFilename()).toBe("radar-356000000.md");
+});
 test("company watch resolves a profile, evaluates sourced signals, records review and exports a digest", async ({
   page,
 }) => {
   await open(page);
+  await page.getByRole("button", { name: "Veille civique" }).click();
   await page.getByRole("button", { name: "Préremplir La Poste" }).click();
   await page
     .getByRole("button", { name: "Analyser la veille publique" })

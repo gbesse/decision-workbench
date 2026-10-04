@@ -6,6 +6,34 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { parseImpactArgs, runImpactCli } from "../scripts/impact.mjs";
 import { parsePortfolioArgs, runPortfolioCli } from "../scripts/portfolio.mjs";
+import { parseRadarArgs, runRadarCli } from "../scripts/radar.mjs";
+
+test("radar CLI parses commercial filters and runs the complete product offline", async () => {
+  const parsed = parseRadarArgs([
+    "--demo",
+    "--departments",
+    "75,92",
+    "--contract-types",
+    "SERVICES",
+    "--max-calls",
+    "3",
+  ]);
+  assert.deepEqual(parsed.departments, "75,92");
+  assert.equal(parsed.maxCalls, 3);
+  assert.throws(
+    () => parseRadarArgs(["--demo", "--limit", "2", "--max-calls", "3"]),
+    /compris entre 0 et --limit/,
+  );
+  let output = "";
+  await runRadarCli(
+    ["--demo", "--limit", "4", "--max-calls", "3", "--format", "json"],
+    { stdout: { write: (chunk) => (output += chunk) } },
+  );
+  const radar = JSON.parse(output);
+  assert.deepEqual(radar.counts, { pursue: 1, investigate: 1, ignore: 2 });
+  assert.equal(radar.company.siren, "356000000");
+  assert.equal(radar.budget.usedCalls, 3);
+});
 
 test("impact CLI parses the French aliases and rejects unsafe ambiguity", () => {
   const parsed = parseImpactArgs([

@@ -35,6 +35,16 @@ import {
   demoCompanyResolver,
   demoDocumentResolver,
 } from "../civic/fixtures.mjs";
+import {
+  recordOpportunityOutcome,
+  renderMarketRadar,
+  scanMarketRadar,
+} from "../radar/index.mjs";
+import {
+  demoRadarCompanyResolver,
+  demoRadarNoticeResolver,
+  demoRadarProvider,
+} from "../radar/fixtures.mjs";
 class HttpError extends Error {
   constructor(status, message) {
     super(message);
@@ -51,6 +61,8 @@ export async function createWorkbench({
   timeoutMs = 30000,
   civicCompanyResolver,
   civicDocumentResolver,
+  radarCompanyResolver,
+  radarNoticeResolver,
 } = {}) {
   ensure(
     typeof token === "string" && token.length >= 24,
@@ -327,8 +339,81 @@ export async function createWorkbench({
           decisions: store.list("decision").slice(0, 30),
           plugins: registry.list(),
           experiments: store.list("experiment").slice(0, 10),
+          marketRadars: store.list("market-radar").slice(0, 20),
           civicWatches: store.list("civic-watch").slice(0, 20),
         });
+        return;
+      }
+      if (req.method === "POST" && path === "/api/radar/scan") {
+        providerReady();
+        const existing = body.radarId
+          ? requireObject("market-radar", body.radarId)
+          : null;
+        if (existing && existing.revision !== body.revision)
+          throw new Conflict();
+        const normalizedIdentifier = String(body.identifier ?? "").replace(
+          /\s/g,
+          "",
+        );
+        const previousRadar =
+          existing?.data ??
+          store
+            .list("market-radar")
+            .find(
+              (radar) => radar.data.company.identifier === normalizedIdentifier,
+            )?.data;
+        const { radarId: _radarId, revision: _revision, ...scanInput } = body;
+        const radar = await scanMarketRadar(
+          { ...scanInput, previousRadar: previousRadar ?? null },
+          {
+            provider: demo && !provider ? demoRadarProvider : actualProvider,
+            companyResolver:
+              radarCompanyResolver ??
+              civicCompanyResolver ??
+              (demo ? demoRadarCompanyResolver : undefined),
+            noticeResolver:
+              radarNoticeResolver ??
+              (demo ? demoRadarNoticeResolver : undefined),
+          },
+        );
+        send(
+          existing ? 200 : 201,
+          existing
+            ? store.put(
+                "market-radar",
+                existing.id,
+                { ...radar, mode },
+                existing.revision,
+              )
+            : store.create("market-radar", { ...radar, mode }),
+        );
+        return;
+      }
+      if (req.method === "POST" && path === "/api/radar/outcome") {
+        const radar = requireObject("market-radar", body.id);
+        if (radar.revision !== body.revision) throw new Conflict();
+        const updated = recordOpportunityOutcome(radar.data, body);
+        const saved = store.put(
+          "market-radar",
+          radar.id,
+          updated,
+          radar.revision,
+        );
+        store.event("radar.opportunity-updated", {
+          radarId: radar.id,
+          noticeId: body.noticeId,
+          stage: body.stage,
+        });
+        send(200, saved);
+        return;
+      }
+      if (req.method === "POST" && path === "/api/radar/digest") {
+        const radar = requireObject("market-radar", body.id);
+        send(
+          200,
+          renderMarketRadar(radar.data),
+          "text/markdown; charset=utf-8",
+        );
         return;
       }
       if (req.method === "POST" && path === "/api/civic/scan") {
@@ -452,7 +537,7 @@ export async function createWorkbench({
       }
       if (
         req.method === "GET" &&
-        /^\/api\/(document|job|run|civic-watch)\/[^/]+$/.test(path)
+        /^\/api\/(document|job|run|civic-watch|market-radar)\/[^/]+$/.test(path)
       ) {
         const [, , kind, id] = path.split("/");
         send(200, requireObject(kind, decodeURIComponent(id)));
