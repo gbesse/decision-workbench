@@ -1,6 +1,6 @@
 {
   "name": "@gbesse/decision-workbench",
-  "version": "0.9.0",
+  "version": "0.9.1",
   "description": "Turn a French company profile and official BOAMP notices into a bounded, evidence-linked opportunity inbox.",
   "type": "module",
   "license": "MIT",
