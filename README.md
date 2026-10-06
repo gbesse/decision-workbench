@@ -12,10 +12,12 @@ qualification to bid, win, loss or dismissal.
 
 ![Marchés Radar with sourced BOAMP opportunities](docs/workbench-radar.png)
 
-**v0.9.0 · Node.js 24+ · MIT · independent of TypeSafe.** The browser UI is French. Jev inference is a separate paid
+**v0.9.1 · Node.js 24+ · MIT · independent of TypeSafe.** The browser UI is French. Jev inference is a separate paid
 TypeSafe service; this project does not redistribute model weights.
 
 ## Try the complete product offline
+
+`node examples/radar-shortlist.mjs` filters a two-signal synthetic watch to relevant items and checks their source links. / `node examples/radar-shortlist.mjs` filtre deux signaux synthétiques pour ne garder que les éléments pertinents et vérifie leurs liens source. / `node examples/radar-shortlist.mjs` filtra dos señales sintéticas para conservar solo los elementos relevantes y comprueba sus enlaces de origen. It makes no BOAMP or Jev call. / Aucun appel BOAMP ou Jev. / No realiza llamadas a BOAMP ni a Jev.
 
 ```sh
 git clone https://github.com/gbesse/decision-workbench.git
@@ -125,7 +127,7 @@ const { state, evidence } = mapState(source, "1", {
 
 Importable modules include `./radar`, `./civic`, `./statebridge`, `./review`, `./sheets`, `./ui`, `./agent`, `./plugins`, `./apps`
 and `./storage`. Install the tagged repository with
-`npm install --ignore-scripts github:gbesse/decision-workbench#v0.9.0`.
+`npm install --ignore-scripts github:gbesse/decision-workbench#v0.9.1`.
 
 ## Operate and verify
 
