@@ -1,6 +1,6 @@
 {
   "name": "@gbesse/decision-workbench",
-  "version": "0.9.1",
+  "version": "0.9.2",
   "description": "Turn a French company profile and official BOAMP notices into a bounded, evidence-linked opportunity inbox.",
   "type": "module",
   "license": "MIT",
@@ -28,6 +28,7 @@
     "start": "node scripts/start.mjs",
     "demo": "node examples/offline-demo.mjs",
     "demo:brief": "node examples/impact-brief.mjs",
+    "demo:radar-refresh": "node examples/radar-refresh.mjs",
     "check": "node scripts/check.mjs",
     "test": "node --test tests/*.test.mjs",
     "test:browser": "playwright test",

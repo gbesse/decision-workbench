@@ -12,7 +12,7 @@ qualification to bid, win, loss or dismissal.
 
 ![Marchés Radar with sourced BOAMP opportunities](docs/workbench-radar.png)
 
-**v0.9.1 · Node.js 24+ · MIT · independent of TypeSafe.** The browser UI is French. Jev inference is a separate paid
+**v0.9.2 · Node.js 24+ · MIT · independent of TypeSafe.** The browser UI is French. Jev inference is a separate paid
 TypeSafe service; this project does not redistribute model weights.
 
 ## Try the complete product offline
@@ -127,7 +127,7 @@ const { state, evidence } = mapState(source, "1", {
 
 Importable modules include `./radar`, `./civic`, `./statebridge`, `./review`, `./sheets`, `./ui`, `./agent`, `./plugins`, `./apps`
 and `./storage`. Install the tagged repository with
-`npm install --ignore-scripts github:gbesse/decision-workbench#v0.9.1`.
+`npm install --ignore-scripts github:gbesse/decision-workbench#v0.9.2`.
 
 ## Operate and verify
 
@@ -162,3 +162,11 @@ single-operator localhost application: no accounts, hosted deployment, OCR, sche
 - [Editable forms and reviewed action sequences](docs/forms-and-sequences.md)
 - [Trusted plugins and reviewed webhooks](docs/plugins.md)
 - [Security model](SECURITY.md)
+
+## October 2026 improvement · Amélioration d’octobre 2026 · Mejora de octubre de 2026
+
+Run `npm run demo:radar-refresh` to see a synthetic BOAMP radar refresh reuse three unchanged assessments, make zero new model calls and retain a human bid outcome.
+
+Exécutez `npm run demo:radar-refresh` pour voir un rafraîchissement BOAMP synthétique réutiliser trois évaluations inchangées, sans nouvel appel au modèle, et conserver une décision humaine de candidature.
+
+Ejecute `npm run demo:radar-refresh` para ver cómo una actualización BOAMP sintética reutiliza tres evaluaciones intactas, sin nuevas llamadas al modelo, y conserva una decisión humana de licitar.
