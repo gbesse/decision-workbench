@@ -170,3 +170,7 @@ Run `npm run demo:radar-refresh` to see a synthetic BOAMP radar refresh reuse th
 Exécutez `npm run demo:radar-refresh` pour voir un rafraîchissement BOAMP synthétique réutiliser trois évaluations inchangées, sans nouvel appel au modèle, et conserver une décision humaine de candidature.
 
 Ejecute `npm run demo:radar-refresh` para ver cómo una actualización BOAMP sintética reutiliza tres evaluaciones intactas, sin nuevas llamadas al modelo, y conserva una decisión humana de licitar.
+
+## Contrôle d’adoption · Adoption check · Comprobación de adopción
+
+[Français : essayer un cas concret](examples/adoption-check.md) · [English: try a concrete case](examples/adoption-check.md) · [Español: pruebe un caso concreto](examples/adoption-check.md).
