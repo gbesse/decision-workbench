@@ -113,15 +113,15 @@ bounded batch. Corrections remain separate from the original judgment. Decision 
 an adjudication before exporting development or holdout cases.
 
 ```js
-import { extract, mapState } from "@gbesse/decision-workbench/statebridge";
+import { extract, mapState } from '@gbesse/decision-workbench/statebridge';
 
 const source = await extract({
-  name: "tickets.csv",
-  format: "csv",
-  content: "text\nPlease refund the invoice",
+  name: 'tickets.csv',
+  format: 'csv',
+  content: 'text\nPlease refund the invoice',
 });
-const { state, evidence } = mapState(source, "1", {
-  text: { source: "text", type: "string" },
+const { state, evidence } = mapState(source, '1', {
+  text: { source: 'text', type: 'string' },
 });
 ```
 

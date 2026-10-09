@@ -29,6 +29,7 @@ npm run demo:radar-refresh
 ```
 
 Compare dos ejecuciones del radar sobre las mismas fuentes sintéticas. Un cambio del estado comercial debe mantenerse separado del dictamen Jev y de los enlaces a los contratos.
+
 ## Variante synthétique · Synthetic variation · Variante sintética
 
 ```text
