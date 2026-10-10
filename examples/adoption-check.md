@@ -41,3 +41,15 @@ FR : adaptez une copie de la fixture locale à cette situation, puis vérifiez l
 EN: adapt a copy of the local fixture to this situation, then check the behavior described above. Values are illustrative, not measured Jev output.
 
 ES: adapte una copia de la fixture local a esta situación y compruebe el comportamiento descrito arriba. Los valores son ilustrativos, no resultados Jev medidos.
+
+## Second cas · Second case · Segundo caso
+
+```text
+opportunity_id=42; source_url=null; commercial_status=investigate
+```
+
+**FR :** Une opportunité sans lien source vérifiable doit rester à examiner. Le statut commercial saisi par l’opérateur ne remplace ni la preuve ni la décision du modèle.
+
+**EN:** An opportunity without a verifiable source link should remain under investigation. The operator’s commercial status replaces neither evidence nor the model decision.
+
+**ES:** Una oportunidad sin enlace verificable a la fuente debe seguir investigándose. El estado comercial del operador no sustituye ni la prueba ni la decisión del modelo.
